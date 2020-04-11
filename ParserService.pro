@@ -22,7 +22,7 @@ SOURCES += \
         parserservice.cpp \
         productparser.cpp
 
-include(/home/mixajlov/Загрузки/qt-solutions-master/qtservice/src/qtservice.pri)
+include($$PWD/qtservice/src/qtservice.pri)
 
 # Default rules for deployment.
 target.files = ParserService
