@@ -3,12 +3,13 @@
 
 #include <QObject>
 #include <QtWebEngineWidgets>
+#include "parserrow.h"
 
 class ProductParser : public QObject
 {
     Q_OBJECT
 public:
-    explicit ProductParser(QObject *parent = nullptr);
+    explicit ProductParser(ParserRow *row, QString link, QObject *parent = nullptr);
 
 signals:
 

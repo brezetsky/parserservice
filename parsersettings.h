@@ -13,15 +13,15 @@ struct ParserSettings
     QString DBUserPassword = "";
     QString DBName = "demoDB";
 
-    ParserSettings(qint64 ParseInterval = 10800, QString AbsUploadPath = "/var/www/uploads", qint64 MaxThreadsCount = 10,
-                   QString DBHostName = "localhost", QString DBUserName = "root", QString DBUserPassword = "", QString DBName = "demoDB") {
-        this->ParseInterval = ParseInterval;
-        this->AbsUploadPath = AbsUploadPath;
-        this->MaxThreadsCount = MaxThreadsCount;
-        this->DBHostName = DBHostName;
-        this->DBUserName = DBUserName;
-        this->DBUserPassword = DBUserPassword;
-        this->DBName = DBName;
+    ParserSettings(qint64 pi = 10800, QString aup = "/var/www/uploads", qint64 mtc = 10,
+                   QString dbhn = "localhost", QString dbun = "root", QString dbup = "", QString dbn = "demoDB") {
+        this->ParseInterval = pi;
+        this->AbsUploadPath = aup;
+        this->MaxThreadsCount = mtc;
+        this->DBHostName = dbhn;
+        this->DBUserName = dbun;
+        this->DBUserPassword = dbup;
+        this->DBName = dbn;
     }
 };
 

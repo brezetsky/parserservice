@@ -22,7 +22,7 @@ void ParserService::start()
     settings.endGroup();
     settings.endGroup();
     settings.endGroup();
-    parserdb = QSqlDatabase::addDatabase("QMYSQL", "mydb");
+    parserdb = QSqlDatabase::addDatabase("QMYSQL", "psdb");
     parserdb.setHostName(DBHostName);
     parserdb.setDatabaseName(DBName);
     parserdb.setUserName(DBUserName);
@@ -35,12 +35,13 @@ void ParserService::start()
     QSqlQuery query(parserdb);
     query.exec("SELECT parse_interval, abs_upload_path, max_threads_count FROM site_settings");
     QString ParseInterval, AbsUploadPath;
-    qint64 MaxThreadsCount;
+    qint64 MaxThreadsCount = 10;
     while (query.next()) {
         ParseInterval = query.value(0).toString();
         AbsUploadPath = query.value(1).toString();
         MaxThreadsCount = query.value(2).toInt();
     }
+    parserdb.close();
     s = new ParserSettings(ParseInterval.toInt(), AbsUploadPath, MaxThreadsCount, DBHostName, DBUserName, DBUserPassword, DBName);
     pm = new ParserMain(s);
 }

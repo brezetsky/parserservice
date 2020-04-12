@@ -4,7 +4,15 @@
 #include <QObject>
 #include <QTimer>
 #include <QDate>
+#include <QSqlDatabase>
+#include <QSqlQuery>
+#include <QThread>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include "parsersettings.h"
+#include "parserrow.h"
+#include "productparser.h"
+#include "pageparser.h"
 
 
 class ParserMain : public QObject
@@ -16,14 +24,23 @@ public:
     void resume();
 
 signals:
+    void stopAllThread();
 
 public slots:
     void parse();
+    void manage_links(QString link);
+    void manage_category_page(ParserRow *row);
+    void manage_parsers();
 
 private:
     bool disabled = false;
     QTimer *parseTimer;
+    QSqlDatabase sitedb;
+    qint64 parserOffset = 0;
     ParserSettings *settings;
+    QList<QThread*> workers;
+    QList<ParserRow*> categoryPages;
+    QList<QString> productLinks;
 };
 
 #endif // PARSERMAIN_H

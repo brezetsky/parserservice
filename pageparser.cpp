@@ -1,6 +1,18 @@
 #include "pageparser.h"
 
-PageParser::PageParser(QObject *parent) : QObject(parent)
+PageParser::PageParser(ParserRow *r, QObject *parent) : QObject(parent)
 {
-    p = new QWebEnginePage();
+    row = r;
+}
+
+void PageParser::load()
+{
+
+}
+
+void PageParser::stop()
+{
+    p->~QWebEnginePage();
+    delete p;
+    destroyed();
 }

@@ -35,4 +35,5 @@ HEADERS += \
     parsermain.h \
     parserservice.h \
     productparser.h \
-    parsersettings.h
+    parsersettings.h \
+    parserrow.h
