@@ -14,6 +14,7 @@
 #include "parserrow.h"
 #include "productparser.h"
 #include "pageparser.h"
+#include <webpage.h>
 
 
 class ParserMain : public QObject
@@ -28,11 +29,12 @@ signals:
     void stopAllThread();
 
 public slots:
-    void parse();
+    void load();
     void manage_links(QString link);
-    void manage_category_page(ParserRow *row);
-    void manage_parsers();
+    void manage_category_page(ParserRow *row, WebPage *wp);
+    void manage_parsers(WebPage *w);
     void threadFinished();
+    void wpFinished(bool ok, WebPage *wp, ParserRow *r, QString a);
 
 private:
     bool disabled = false;
@@ -40,9 +42,10 @@ private:
     QSqlDatabase sitedb;
     qint64 parserOffset = 0;
     ParserSettings *settings;
-    QList<QThread*> workers;
+    qint64 workers_count;
     QList<ParserRow*> categoryPages;
     QList<QString> productLinks;
+    void loadPage(QString action);
 };
 
 #endif // PARSERMAIN_H

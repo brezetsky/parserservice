@@ -16,6 +16,7 @@ ParserMain::ParserMain(ParserSettings *s, QObject *parent) : QObject(parent)
     if(!ok)
     {
         qWarning("Can't connect to database!");
+        exit(0);
     }
     while(cdt > bdt)
     {
@@ -26,7 +27,7 @@ ParserMain::ParserMain(ParserSettings *s, QObject *parent) : QObject(parent)
     qint64 firstTimer = cdt.toTime_t() - ldt.toTime_t();
     parseTimer = new QTimer(this);
     parseTimer->setInterval(firstTimer * 1000);
-    connect(parseTimer, SIGNAL(timeout()),this,SLOT(parse()));
+    connect(parseTimer, SIGNAL(timeout()),this,SLOT(load()));
     parseTimer->setSingleShot(true);
     parseTimer->start();
     sitedb.close();
@@ -42,23 +43,75 @@ void ParserMain::resume()
     this->disabled = false;
 }
 
-void ParserMain::parse()
+void ParserMain::load()
 {
+    qWarning("Timer fires!");
     emit stopAllThread();
     parserOffset = 0;
     if(parseTimer->interval() < settings->ParseInterval * 1000)
     {
         parseTimer->setInterval(settings->ParseInterval * 1000);
     }
-    bool ok = sitedb.open();
-    if(!ok)
+    loadPage("page");
+}
+
+void ParserMain::manage_links(QString link)
+{
+    //qWarning(link.toLatin1().constData());
+}
+
+void ParserMain::manage_category_page(ParserRow *row, WebPage *wp)
+{
+    qWarning(row->category_url.toLatin1().constData());
+    workers_count--;
+    if(row->category_url != "false")
     {
-        qWarning("Can't connect to database!");
+        workers_count++;
+        WebPage *wp = new WebPage(row, "page");
+        connect(wp, &WebPage::wLoadFinishedSignal, this, &ParserMain::wpFinished);
+        qWarning(row->category_url.toLatin1().constData());
+        wp->setUrl(QUrl(row->category_url));
     }
-    qWarning("Timer fires!");
-    qWarning(QString::number(categoryPages.size()).toLatin1().constData());
+}
+
+void ParserMain::manage_parsers(WebPage *wp)
+{
+
+}
+
+void ParserMain::threadFinished()
+{
+    qWarning("Thread finished!");
+}
+
+void ParserMain::wpFinished(bool ok, WebPage *wp, ParserRow *r, QString a)
+{
+    if(a == "page")
+    {
+        QThread *w = new QThread;
+        PageParser *page_parser = new PageParser(r, wp);
+        connect(page_parser, &PageParser::getedLink, this, &ParserMain::manage_links);
+        connect(page_parser, &PageParser::pageParseEnd, this, &ParserMain::manage_category_page);
+        connect(page_parser, &PageParser::pageParseEnd, w, &QThread::quit);
+        connect(page_parser, &PageParser::parserEnd, this, &ParserMain::manage_parsers);
+        connect(page_parser, &PageParser::parserEnd, w, &QThread::quit);
+        connect(w, &QThread::started, page_parser, &PageParser::parse);
+        connect(w, &QThread::finished, this, &ParserMain::threadFinished);
+        connect(this, &ParserMain::stopAllThread, page_parser, &PageParser::stop);
+        page_parser->moveToThread(w);
+        w->start();
+    }
+}
+
+void ParserMain::loadPage(QString action)
+{
     if(this->disabled == false)
     {
+        if(!sitedb.open())
+        {
+            qWarning("Can't connect to database!");
+            exit(0);
+        }
         //start parsing
         QSqlQuery getParserQuery(sitedb);
         getParserQuery.prepare("SELECT * FROM product_parsers "
@@ -66,7 +119,7 @@ void ParserMain::parse()
         getParserQuery.bindValue(":offset", parserOffset);
         getParserQuery.bindValue(":limit", settings->MaxThreadsCount);
         getParserQuery.exec();
-        parserOffset = parserOffset + settings->MaxThreadsCount;
+        parserOffset = parserOffset + getParserQuery.size();
         ParserRow *p;
         while (getParserQuery.next()) {
             p = new ParserRow();
@@ -94,64 +147,17 @@ void ParserMain::parse()
             p->date_create = getParserQuery.value(18).toInt();
             p->date_last_parse = getParserQuery.value(19).toInt();
             categoryPages.append(p);
-            qWarning(QString::number(categoryPages.size()).toLatin1().constData());
         }
-        while (workers.size() < settings->MaxThreadsCount && categoryPages.size() > 0) {
+        while (workers_count < settings->MaxThreadsCount && categoryPages.size() > 0) {
             if(categoryPages.size() > 0)
             {
-                QThread *w = new QThread;
-                ParserRow *tpr = categoryPages.takeFirst();
-                qWarning(QString::number(categoryPages.size()).toLatin1().constData());
-                PageParser *page_parser = new PageParser(tpr);
-                connect(page_parser, &PageParser::getedLink, this, &ParserMain::manage_links);
-                connect(page_parser, &PageParser::pageParseEnd, this, &ParserMain::manage_category_page);
-                connect(page_parser, &PageParser::pageParseEnd, w, &QThread::quit);
-                connect(page_parser, &PageParser::parserEnd, this, &ParserMain::manage_parsers);
-                connect(page_parser, &PageParser::parserEnd, w, &QThread::quit);
-                connect(w, &QThread::started, page_parser, &PageParser::load);
-                connect(w, &QThread::finished, this, &ParserMain::threadFinished);
-                connect(this, &ParserMain::stopAllThread, page_parser, &PageParser::stop);
-                page_parser->moveToThread(w);
-                w->start();
-                workers.append(w);
+                ParserRow *r = categoryPages.takeFirst();
+                workers_count++;
+                WebPage *wp = new WebPage(r, action);
+                connect(wp, &WebPage::wLoadFinishedSignal, this, &ParserMain::wpFinished);
+                wp->setUrl(QUrl(r->category_url));
             }
         }
-    }
-    sitedb.close();
-}
-
-void ParserMain::manage_links(QString link)
-{
-    //qWarning(link.toLatin1().constData());
-}
-
-void ParserMain::manage_category_page(ParserRow *row)
-{
-    qWarning(row->category_url.toLatin1().constData());
-    if(workers.size() < settings->MaxThreadsCount)
-    {
-        QThread *w = new QThread;
-        qWarning(QString::number(categoryPages.size()).toLatin1().constData());
-        PageParser *page_parser = new PageParser(row);
-        connect(page_parser, &PageParser::getedLink, this, &ParserMain::manage_links);
-        connect(page_parser, &PageParser::pageParseEnd, this, &ParserMain::manage_category_page);
-        connect(page_parser, &PageParser::parserEnd, this, &ParserMain::manage_parsers);
-        connect(w, &QThread::started, page_parser, &PageParser::load);
-        connect(this, &ParserMain::stopAllThread, page_parser, &PageParser::stop);
-        connect(page_parser, &PageParser::destroyed, w, &QThread::terminate);
-        page_parser->moveToThread(w);
-        w->start();
-        workers.append(w);
+        sitedb.close();
     }
 }
-
-void ParserMain::manage_parsers()
-{
-
-}
-
-void ParserMain::threadFinished()
-{
-    qWarning("Thread finished!");
-}
-

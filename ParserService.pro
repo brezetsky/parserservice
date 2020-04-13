@@ -20,7 +20,8 @@ SOURCES += \
         pageparser.cpp \
         parsermain.cpp \
         parserservice.cpp \
-        productparser.cpp
+        productparser.cpp \
+    webpage.cpp
 
 include($$PWD/qtservice/src/qtservice.pri)
 
@@ -36,7 +37,8 @@ HEADERS += \
     parserservice.h \
     productparser.h \
     parsersettings.h \
-    parserrow.h
+    parserrow.h \
+    webpage.h
 
 RESOURCES += \
     jsparser.qrc

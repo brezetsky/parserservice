@@ -2,28 +2,27 @@
 #define PAGEPARSER_H
 
 #include <QObject>
-#include <QWebEngineView>
 #include <QFile>
 #include "parserrow.h"
+#include <webpage.h>
 
 class PageParser : public QObject
 {
     Q_OBJECT
 public:
-    explicit PageParser(ParserRow *r, QObject *parent = nullptr);
+    explicit PageParser(ParserRow *r, WebPage *p, QObject *parent = nullptr);
 
 signals:
     void getedLink(QString link);
-    void pageParseEnd(ParserRow *row);
-    void parserEnd();
+    void pageParseEnd(ParserRow *row, WebPage *wp);
+    void parserEnd(WebPage *wp);
 
 public slots:
     void stop();
-    void load();
     void parse();
 
 private:
-    QWebEngineView *p;
+    WebPage *page;
     ParserRow *row;
     QString html;
     void runDestructor(const QVariant &v);
