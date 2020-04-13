@@ -37,3 +37,6 @@ HEADERS += \
     productparser.h \
     parsersettings.h \
     parserrow.h
+
+RESOURCES += \
+    jsparser.qrc

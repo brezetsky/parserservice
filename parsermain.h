@@ -9,6 +9,7 @@
 #include <QThread>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QVariant>
 #include "parsersettings.h"
 #include "parserrow.h"
 #include "productparser.h"
@@ -31,6 +32,7 @@ public slots:
     void manage_links(QString link);
     void manage_category_page(ParserRow *row);
     void manage_parsers();
+    void threadFinished();
 
 private:
     bool disabled = false;

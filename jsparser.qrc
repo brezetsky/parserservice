@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/">
+        <file>jquery.min.js</file>
+        <file>parseProductLinks.js</file>
+        <file>getNextPageLink.js</file>
+    </qresource>
+</RCC>
