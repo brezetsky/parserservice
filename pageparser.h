@@ -2,7 +2,7 @@
 #define PAGEPARSER_H
 
 #include <QObject>
-#include <QWebEnginePage>
+#include <QWebEngineView>
 #include <QFile>
 #include "parserrow.h"
 
@@ -23,9 +23,10 @@ public slots:
     void parse();
 
 private:
-    //QWebEnginePage *p;
+    QWebEngineView *p;
     ParserRow *row;
     QString html;
+    void runDestructor(const QVariant &v);
 };
 
 #endif // PAGEPARSER_H

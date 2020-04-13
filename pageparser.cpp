@@ -2,17 +2,15 @@
 
 PageParser::PageParser(ParserRow *r, QObject *parent) : QObject(parent)
 {
-    //this->row = r;
+    this->row = r;
 }
 
 void PageParser::load()
 {
-    QString p = "test";
-    p = "test2";
-    //p = new QWebEnginePage();
-    //connect(p, &QWebEnginePage::loadFinished, this, &PageParser::parse);
-    //p->setUrl(QUrl(row->category_url.toLatin1().constData()));
-    exit(0);
+    qWarning("New webpage!");
+    p = new QWebEngineView();
+    connect(p, &QWebEngineView::loadFinished, this, &PageParser::parse);
+    p->page()->setUrl(QUrl(row->category_url.toLatin1().constData()));
 }
 
 void PageParser::stop()
@@ -21,19 +19,19 @@ void PageParser::stop()
 
 void PageParser::parse()
 {
-    /*QFile file;
+    QFile file;
     file.setFileName(":/jquery.min.js");
     file.open(QIODevice::ReadOnly);
     QString jQuery = file.readAll();
     jQuery.append("\nvar qt = { 'jQuery': jQuery.noConflict(true) };");
     file.close();
-    p->runJavaScript(jQuery);
+    p->page()->runJavaScript(jQuery);
     file.setFileName(":/parseProductLinks.js");
     file.open(QIODevice::ReadOnly);
     QString productLinksParser = file.readAll();
     file.close();
     productLinksParser = productLinksParser.replace("{item_selector}", row->item_selector);
-    p->runJavaScript(productLinksParser,[this](const QVariant &v) {
+    p->page()->runJavaScript(productLinksParser,[this](const QVariant &v) {
         emit getedLink(v.toString());
     });
     file.setFileName(":/getNextPageLink.js");
@@ -41,8 +39,21 @@ void PageParser::parse()
     QString nextPageLinkParser = file.readAll();
     file.close();
     nextPageLinkParser = nextPageLinkParser.replace("{next_page_selector}", row->next_page_selector);
-    p->runJavaScript(nextPageLinkParser,[this](const QVariant &v) {
+    p->page()->runJavaScript(nextPageLinkParser,[this](const QVariant &v) {
+        runDestructor(v);
+    });
+}
+
+void PageParser::runDestructor(const QVariant &v)
+{
+    p->close();
+    if(v.toString() != "false")
+    {
         row->category_url = v.toString();
-        //emit pageParseEnd(row);
-    });*/
+        emit pageParseEnd(row);
+    }
+    else
+    {
+        emit parserEnd();
+    }
 }

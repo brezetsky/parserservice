@@ -105,13 +105,12 @@ void ParserMain::parse()
                 PageParser *page_parser = new PageParser(tpr);
                 connect(page_parser, &PageParser::getedLink, this, &ParserMain::manage_links);
                 connect(page_parser, &PageParser::pageParseEnd, this, &ParserMain::manage_category_page);
+                connect(page_parser, &PageParser::pageParseEnd, w, &QThread::quit);
                 connect(page_parser, &PageParser::parserEnd, this, &ParserMain::manage_parsers);
+                connect(page_parser, &PageParser::parserEnd, w, &QThread::quit);
                 connect(w, &QThread::started, page_parser, &PageParser::load);
                 connect(w, &QThread::finished, this, &ParserMain::threadFinished);
-                connect(w, &QThread::finished, page_parser, &PageParser::deleteLater);
-                connect(w, &QThread::destroyed, this, &ParserMain::threadFinished);
                 connect(this, &ParserMain::stopAllThread, page_parser, &PageParser::stop);
-                connect(page_parser, &PageParser::destroyed, w, &QThread::terminate);
                 page_parser->moveToThread(w);
                 w->start();
                 workers.append(w);
