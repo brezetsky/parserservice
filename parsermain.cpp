@@ -45,43 +45,134 @@ void ParserMain::resume()
 
 void ParserMain::load()
 {
-    qWarning("Timer fires!");
+    //qWarning("Timer fires!");
+    if(!sitedb.open())
+    {
+        qWarning("Can't connect to database!");
+        exit(0);
+    }
+    QSqlQuery query(sitedb);
+    query.exec("SELECT parse_interval, abs_upload_path, max_threads_count FROM site_settings");
+    QString AbsUploadPath;
+    qint64 ParseInterval, MaxThreadsCount = 10;
+    while (query.next()) {
+        ParseInterval = query.value(0).toInt();
+        AbsUploadPath = query.value(1).toString();
+        MaxThreadsCount = query.value(2).toInt();
+    }
+    sitedb.close();
+    settings->ParseInterval = ParseInterval;
+    settings->AbsUploadPath = AbsUploadPath;
+    settings->MaxThreadsCount = MaxThreadsCount;
     emit stopAllThread();
     parserOffset = 0;
     if(parseTimer->interval() < settings->ParseInterval * 1000)
     {
         parseTimer->setInterval(settings->ParseInterval * 1000);
     }
+    loadDbData();
     loadPage("page");
 }
 
-void ParserMain::manage_links(QString link)
+void ParserMain::manage_links(QString link, ParserRow *r)
 {
-    //qWarning(link.toLatin1().constData());
+    QJsonDocument doc = QJsonDocument::fromJson(link.toUtf8());
+   //get the jsonObject
+    QJsonObject jObject = doc.object();
+    QVariantMap link_map = jObject.toVariantMap();
+    foreach (QString k, link_map.keys()) {
+        QString lk = link_map[k].toString();
+        if(workers_count < settings->MaxThreadsCount)
+        {
+            workers_count++;
+            WebPage *page = new WebPage(r, "link");
+            connect(page, &WebPage::wLoadFinishedSignal, this, &ParserMain::wpFinished);
+            //fprintf(stderr, "Fires link %s!\n", lk.toLatin1().constData());
+            page->setUrl(QUrl(lk));
+        }
+        else
+        {
+            LinkObject *tlo = new LinkObject(r, lk);
+            productLinks.append(tlo);
+        }
+    }
 }
 
 void ParserMain::manage_category_page(ParserRow *row, WebPage *wp)
 {
-    qWarning(row->category_url.toLatin1().constData());
+    pageActiveLoaderCount--;
+    wp->deleteLater();
+    //qWarning(row->category_url.toLatin1().constData());
     workers_count--;
-    if(row->category_url != "false")
+    categoryPages.prepend(row);
+    if(productLinks.size() > 0)
     {
-        workers_count++;
-        WebPage *wp = new WebPage(row, "page");
-        connect(wp, &WebPage::wLoadFinishedSignal, this, &ParserMain::wpFinished);
-        qWarning(row->category_url.toLatin1().constData());
-        wp->setUrl(QUrl(row->category_url));
+        while (productLinks.size() > 0 && workers_count < settings->MaxThreadsCount) {
+            LinkObject *lo = productLinks.takeFirst();
+            workers_count++;
+            WebPage *page = new WebPage(lo->prow, "link");
+            connect(page, &WebPage::wLoadFinishedSignal, this, &ParserMain::wpFinished);
+            //fprintf(stderr, "Fires link %s!\n", lo->link.toLatin1().constData());
+            page->setUrl(QUrl(lo->link));
+        }
+    }
+    else
+    {
+        loadPage("page");
     }
 }
 
-void ParserMain::manage_parsers(WebPage *wp)
+void ParserMain::manage_parsers(WebPage *wp, QString sender_name)
 {
-
+    if(sender_name == "PageParser")
+    {
+        pageActiveLoaderCount--;
+    }
+    wp->deleteLater();
+    workers_count--;
+    if(sender_name == "TotalStop")
+    {
+        productLinks.clear();
+        categoryPages.clear();
+        workers_count = 0;
+        pageActiveLoaderCount = 0;
+        parserOffset = 0;
+    }
+    if(productLinks.size() > 0)
+    {
+        while (productLinks.size() > 0 && workers_count < settings->MaxThreadsCount) {
+            LinkObject *lo = productLinks.takeFirst();
+            workers_count++;
+            WebPage *page = new WebPage(lo->prow, "link");
+            connect(page, &WebPage::wLoadFinishedSignal, this, &ParserMain::wpFinished);
+            //fprintf(stderr, "Fires link %s!\n", lo->link.toLatin1().constData());
+            page->setUrl(QUrl(lo->link));
+        }
+    }
+    else
+    {
+        if(categoryPages.size() > 0)
+        {
+            loadPage("page");
+        }
+        else
+        {
+            loadDbData();
+            if(categoryPages.size() > 0)
+            {
+                loadPage("page");
+            }
+            if(categoryPages.size() <= 0 && pageActiveLoaderCount <= 0 && workers_count <= 0)
+            {
+                qWarning("Parser complete!!!");
+            }
+        }
+    }
 }
 
 void ParserMain::threadFinished()
 {
-    qWarning("Thread finished!");
+    //qWarning("Thread finished!");
 }
 
 void ParserMain::wpFinished(bool ok, WebPage *wp, ParserRow *r, QString a)
@@ -101,9 +192,41 @@ void ParserMain::wpFinished(bool ok, WebPage *wp, ParserRow *r, QString a)
         page_parser->moveToThread(w);
         w->start();
     }
+    else if(a == "link")
+    {
+        QThread *w = new QThread;
+        ProductParser *product_parser = new ProductParser(r, wp, settings);
+        connect(product_parser, &ProductParser::parserEnd, this, &ParserMain::manage_parsers);
+        connect(product_parser, &ProductParser::parserEnd, w, &QThread::quit);
+        connect(w, &QThread::started, product_parser, &ProductParser::parse);
+        connect(w, &QThread::finished, this, &ParserMain::threadFinished);
+        connect(this, &ParserMain::stopAllThread, product_parser, &ProductParser::stop);
+        product_parser->moveToThread(w);
+        w->start();
+    }
 }
 
 void ParserMain::loadPage(QString action)
+{
+    if(this->disabled == false)
+    {
+        while (workers_count < settings->MaxThreadsCount && categoryPages.size() > 0) {
+            if(categoryPages.size() > 0)
+            {
+                ParserRow *r = categoryPages.takeFirst();
+                fprintf(stderr, "Load page: %s!\n", r->category_url.toLatin1().constData());
+                workers_count++;
+                pageActiveLoaderCount++;
+                WebPage *wp = new WebPage(r, action);
+                connect(wp, &WebPage::wLoadFinishedSignal, this, &ParserMain::wpFinished);
+                wp->setUrl(QUrl(r->category_url));
+            }
+        }
+        sitedb.close();
+    }
+}
+
+void ParserMain::loadDbData()
 {
     if(this->disabled == false)
     {
@@ -148,16 +271,10 @@ void ParserMain::loadPage(QString action)
             p->date_last_parse = getParserQuery.value(19).toInt();
             categoryPages.append(p);
         }
-        while (workers_count < settings->MaxThreadsCount && categoryPages.size() > 0) {
-            if(categoryPages.size() > 0)
-            {
-                ParserRow *r = categoryPages.takeFirst();
-                workers_count++;
-                WebPage *wp = new WebPage(r, action);
-                connect(wp, &WebPage::wLoadFinishedSignal, this, &ParserMain::wpFinished);
-                wp->setUrl(QUrl(r->category_url));
-            }
-        }
-        sitedb.close();
     }
+}
+
+ParserMain::~ParserMain()
+{
+    emit stopAllThread();
 }

@@ -34,15 +34,15 @@ void ParserService::start()
     }
     QSqlQuery query(parserdb);
     query.exec("SELECT parse_interval, abs_upload_path, max_threads_count FROM site_settings");
-    QString ParseInterval, AbsUploadPath;
-    qint64 MaxThreadsCount = 10;
+    QString AbsUploadPath;
+    qint64 MaxThreadsCount = 10, ParseInterval;
     while (query.next()) {
-        ParseInterval = query.value(0).toString();
+        ParseInterval = query.value(0).toInt();
         AbsUploadPath = query.value(1).toString();
         MaxThreadsCount = query.value(2).toInt();
     }
     parserdb.close();
-    s = new ParserSettings(ParseInterval.toInt(), AbsUploadPath, MaxThreadsCount, DBHostName, DBUserName, DBUserPassword, DBName);
+    s = new ParserSettings(ParseInterval, AbsUploadPath, MaxThreadsCount, DBHostName, DBUserName, DBUserPassword, DBName);
     pm = new ParserMain(s);
 }
 

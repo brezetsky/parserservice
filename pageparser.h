@@ -13,13 +13,13 @@ public:
     explicit PageParser(ParserRow *r, WebPage *p, QObject *parent = nullptr);
 
 signals:
-    void getedLink(QString link);
+    void getedLink(QString link, ParserRow *r);
     void pageParseEnd(ParserRow *row, WebPage *wp);
-    void parserEnd(WebPage *wp);
+    void parserEnd(WebPage *wp, QString sender_name);
 
 public slots:
-    void stop();
     void parse();
+    void stop();
 
 private:
     WebPage *page;

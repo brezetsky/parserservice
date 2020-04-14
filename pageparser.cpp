@@ -6,11 +6,6 @@ PageParser::PageParser(ParserRow *r, WebPage *p, QObject *parent) : QObject(pare
     this->page = p;
 }
 
-void PageParser::stop()
-{
-    emit parserEnd(page);
-}
-
 void PageParser::parse()
 {
     QFile file;
@@ -26,7 +21,7 @@ void PageParser::parse()
     file.close();
     productLinksParser = productLinksParser.replace("{item_selector}", row->item_selector);
     page->runJavaScript(productLinksParser,[this](const QVariant &v) {
-        emit getedLink(v.toString());
+        emit getedLink(v.toString(), row);
     });
     file.setFileName(":/getNextPageLink.js");
     file.open(QIODevice::ReadOnly);
@@ -47,6 +42,11 @@ void PageParser::runDestructor(const QVariant &v)
     }
     else
     {
-        emit parserEnd(page);
+        emit parserEnd(page, "PageParser");
     }
+}
+
+void PageParser::stop()
+{
+    emit parserEnd(page, "TotalStop");
 }

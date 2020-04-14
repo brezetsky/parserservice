@@ -11,6 +11,7 @@ class WebPage : public QWebEnginePage
 
 public:
     WebPage(ParserRow *r, QString a = "page", QWebEngineProfile *profile = QWebEngineProfile::defaultProfile(), QObject *parent = nullptr);
+    void javaScriptConsoleMessage(QWebEnginePage::JavaScriptConsoleMessageLevel level, const QString &message, int lineNumber, const QString &sourceID);
 
 private:
     ParserRow *row;

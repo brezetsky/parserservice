@@ -2,21 +2,27 @@
 #define PRODUCTPARSER_H
 
 #include <QObject>
-#include <QtWebEngineWidgets>
+#include "webpage.h"
 #include "parserrow.h"
+#include "parsersettings.h"
 
 class ProductParser : public QObject
 {
     Q_OBJECT
 public:
-    explicit ProductParser(ParserRow *row, QString link, QObject *parent = nullptr);
+    explicit ProductParser(ParserRow *r, WebPage *wp, ParserSettings *s, QObject *parent = nullptr);
 
 signals:
+    void parserEnd(WebPage *wp, QString sender_name);
 
 public slots:
+    void stop();
+    void parse();
 
 private:
-    QWebEnginePage *p;
+    WebPage *p;
+    ParserRow *row;
+    ParserSettings *settings;
 };
 
 #endif // PRODUCTPARSER_H
