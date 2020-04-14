@@ -165,6 +165,16 @@ void ParserMain::manage_parsers(WebPage *wp, QString sender_name)
             if(categoryPages.size() <= 0 && pageActiveLoaderCount <= 0 && workers_count <= 0)
             {
                 qWarning("Parser complete!!!");
+                if(!sitedb.open())
+                {
+                    qWarning("Can't connect to database!");
+                    exit(0);
+                }
+                QSqlQuery query(sitedb);
+                query.prepare("UPDATE product_parsers SET date_last_parse = :last_parse;");
+                query.bindValue(":last_parse", QDateTime::currentDateTime().toTime_t());
+                query.exec();
+                sitedb.close();
             }
         }
     }
