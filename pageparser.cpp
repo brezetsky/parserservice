@@ -1,48 +1,52 @@
 #include "pageparser.h"
 
-PageParser::PageParser(ParserRow *r, QObject *parent) : QObject(parent)
+PageParser::PageParser(ParserRow *r, WebPage *p, QObject *parent) : QObject(parent)
 {
-    //this->row = r;
-}
-
-void PageParser::load()
-{
-    QString p = "test";
-    p = "test2";
-    //p = new QWebEnginePage();
-    //connect(p, &QWebEnginePage::loadFinished, this, &PageParser::parse);
-    //p->setUrl(QUrl(row->category_url.toLatin1().constData()));
-    exit(0);
-}
-
-void PageParser::stop()
-{
+    this->row = r;
+    this->page = p;
 }
 
 void PageParser::parse()
 {
-    /*QFile file;
+    QFile file;
     file.setFileName(":/jquery.min.js");
     file.open(QIODevice::ReadOnly);
     QString jQuery = file.readAll();
     jQuery.append("\nvar qt = { 'jQuery': jQuery.noConflict(true) };");
     file.close();
-    p->runJavaScript(jQuery);
+    page->runJavaScript(jQuery);
     file.setFileName(":/parseProductLinks.js");
     file.open(QIODevice::ReadOnly);
     QString productLinksParser = file.readAll();
     file.close();
     productLinksParser = productLinksParser.replace("{item_selector}", row->item_selector);
-    p->runJavaScript(productLinksParser,[this](const QVariant &v) {
-        emit getedLink(v.toString());
+    page->runJavaScript(productLinksParser,[this](const QVariant &v) {
+        emit getedLink(v.toString(), row);
     });
     file.setFileName(":/getNextPageLink.js");
     file.open(QIODevice::ReadOnly);
     QString nextPageLinkParser = file.readAll();
     file.close();
     nextPageLinkParser = nextPageLinkParser.replace("{next_page_selector}", row->next_page_selector);
-    p->runJavaScript(nextPageLinkParser,[this](const QVariant &v) {
+    page->runJavaScript(nextPageLinkParser,[this](const QVariant &v) {
+        runDestructor(v);
+    });
+}
+
+void PageParser::runDestructor(const QVariant &v)
+{
+    if(v.toString() != "false")
+    {
         row->category_url = v.toString();
-        //emit pageParseEnd(row);
-    });*/
+        emit pageParseEnd(row, page);
+    }
+    else
+    {
+        emit parserEnd(page, "PageParser");
+    }
+}
+
+void PageParser::stop()
+{
+    emit parserEnd(page, "TotalStop");
 }
