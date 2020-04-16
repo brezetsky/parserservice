@@ -3,5 +3,6 @@
         <file>jquery.min.js</file>
         <file>parseProductLinks.js</file>
         <file>getNextPageLink.js</file>
+        <file>getProductItem.js</file>
     </qresource>
 </RCC>

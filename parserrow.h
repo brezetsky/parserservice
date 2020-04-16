@@ -22,7 +22,7 @@ struct ParserRow
     float logistic_price;
     QString end_time_selector;
     qint8 publicate_status;
-    QVariantMap additional_fields;
+    QString additional_fields;
     QString price_formula;
     qint64 date_create;
     qint64 date_last_parse;

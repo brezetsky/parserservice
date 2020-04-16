@@ -33,16 +33,17 @@ void ParserService::start()
         qWarning("Can't connect to database!");
     }
     QSqlQuery query(parserdb);
-    query.exec("SELECT parse_interval, abs_upload_path, max_threads_count FROM site_settings");
-    QString AbsUploadPath;
+    query.exec("SELECT parse_interval, abs_upload_path, max_threads_count, yandex_translate_key FROM site_settings");
+    QString AbsUploadPath, ytk;
     qint64 MaxThreadsCount = 10, ParseInterval;
     while (query.next()) {
         ParseInterval = query.value(0).toInt();
         AbsUploadPath = query.value(1).toString();
         MaxThreadsCount = query.value(2).toInt();
+        ytk = query.value(3).toString();
     }
     parserdb.close();
-    s = new ParserSettings(ParseInterval, AbsUploadPath, MaxThreadsCount, DBHostName, DBUserName, DBUserPassword, DBName);
+    s = new ParserSettings(ParseInterval, AbsUploadPath, MaxThreadsCount, DBHostName, DBUserName, DBUserPassword, DBName, ytk);
     pm = new ParserMain(s);
 }
 
