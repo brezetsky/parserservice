@@ -3,6 +3,7 @@
 
 #include <QWebEnginePage>
 #include <QWebEngineProfile>
+#include <QWebEngineCookieStore>
 #include "parserrow.h"
 
 class WebPage : public QWebEnginePage

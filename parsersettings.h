@@ -12,9 +12,11 @@ struct ParserSettings
     QString DBUserName = "root";
     QString DBUserPassword = "";
     QString DBName = "demoDB";
+    QString YandexTranslateKey = "";
 
     ParserSettings(qint64 pi = 10800, QString aup = "/var/www/uploads", qint64 mtc = 10,
-                   QString dbhn = "localhost", QString dbun = "root", QString dbup = "", QString dbn = "demoDB") {
+                   QString dbhn = "localhost", QString dbun = "root", QString dbup = "", QString dbn = "demoDB",
+                   QString ytk = "nokey") {
         this->ParseInterval = pi;
         this->AbsUploadPath = aup;
         this->MaxThreadsCount = mtc;
@@ -22,6 +24,7 @@ struct ParserSettings
         this->DBUserName = dbun;
         this->DBUserPassword = dbup;
         this->DBName = dbn;
+        this->YandexTranslateKey = ytk;
     }
 };
 

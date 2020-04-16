@@ -5,32 +5,23 @@ ParserMain::ParserMain(ParserSettings *s, QObject *parent) : QObject(parent)
     QDateTime cdt = QDateTime::currentDateTime();
     QString date = cdt.toString("dd.MM.yyyy") + " 00:00:00";
     QDateTime bdt = QDateTime::fromString(date, "dd.MM.yyyy HH:mm:ss");
-    QDateTime ldt = bdt;
     settings = s;
+#if defined(QTEST)
+    qWarning("Test defined");
+    exit(0);
+#endif
     sitedb = QSqlDatabase::addDatabase("QMYSQL", "pmdb");
     sitedb.setHostName(settings->DBHostName);
     sitedb.setDatabaseName(settings->DBName);
     sitedb.setUserName(settings->DBUserName);
     sitedb.setPassword(settings->DBUserPassword);
-    bool ok = sitedb.open();
-    if(!ok)
-    {
-        qWarning("Can't connect to database!");
-        exit(0);
-    }
-    while(cdt > bdt)
-    {
-        cdt = QDateTime::currentDateTime();
-        ldt = bdt;
-        bdt = bdt.addSecs(settings->ParseInterval);
-    }
-    qint64 firstTimer = cdt.toTime_t() - ldt.toTime_t();
+    qint64 fromMaybeLastStartTime = (cdt.toTime_t() - bdt.toTime_t()) % settings->ParseInterval;
+    qint64 firstTimer = settings->ParseInterval - fromMaybeLastStartTime;
     parseTimer = new QTimer(this);
     parseTimer->setInterval(firstTimer * 1000);
     connect(parseTimer, SIGNAL(timeout()),this,SLOT(load()));
     parseTimer->setSingleShot(true);
     parseTimer->start();
-    sitedb.close();
 }
 
 void ParserMain::pause()
@@ -45,22 +36,24 @@ void ParserMain::resume()
 
 void ParserMain::load()
 {
-    //qWarning("Timer fires!");
     if(!sitedb.open())
     {
         qWarning("Can't connect to database!");
         exit(0);
     }
+    qWarning("Parser Start!!!");
+    startTime = QDateTime::currentDateTime().toTime_t();
     QSqlQuery query(sitedb);
-    query.exec("SELECT parse_interval, abs_upload_path, max_threads_count FROM site_settings");
+    query.exec("SELECT parse_interval, abs_upload_path, max_threads_count, yandex_translate_key FROM site_settings");
     QString AbsUploadPath;
     qint64 ParseInterval, MaxThreadsCount = 10;
     while (query.next()) {
         ParseInterval = query.value(0).toInt();
         AbsUploadPath = query.value(1).toString();
         MaxThreadsCount = query.value(2).toInt();
+        settings->YandexTranslateKey = query.value(3).toString();
     }
-    sitedb.close();
+    //query.~QSqlQuery();
     settings->ParseInterval = ParseInterval;
     settings->AbsUploadPath = AbsUploadPath;
     settings->MaxThreadsCount = MaxThreadsCount;
@@ -137,44 +130,47 @@ void ParserMain::manage_parsers(WebPage *wp, QString sender_name)
         workers_count = 0;
         pageActiveLoaderCount = 0;
         parserOffset = 0;
+        qWarning("Parser complete!!!");
+        qint64 totalTime = QDateTime::currentDateTime().toTime_t() - startTime;
+        fprintf(stderr, "Total running time: %s seconds!", QString::number(totalTime).toLatin1().constData());
+        sitedb.close();
     }
-    if(productLinks.size() > 0)
-    {
-        while (productLinks.size() > 0 && workers_count < settings->MaxThreadsCount) {
-            LinkObject *lo = productLinks.takeFirst();
-            workers_count++;
-            WebPage *page = new WebPage(lo->prow, "link");
-            connect(page, &WebPage::wLoadFinishedSignal, this, &ParserMain::wpFinished);
-            //fprintf(stderr, "Fires link %s!\n", lo->link.toLatin1().constData());
-            page->setUrl(QUrl(lo->link));
-        }
-    }
-    else
-    {
-        if(categoryPages.size() > 0)
+    else {
+        if(productLinks.size() > 0)
         {
-            loadPage("page");
+            while (productLinks.size() > 0 && workers_count < settings->MaxThreadsCount) {
+                LinkObject *lo = productLinks.takeFirst();
+                workers_count++;
+                WebPage *page = new WebPage(lo->prow, "link");
+                connect(page, &WebPage::wLoadFinishedSignal, this, &ParserMain::wpFinished);
+                //fprintf(stderr, "Fires link %s!\n", lo->link.toLatin1().constData());
+                page->setUrl(QUrl(lo->link));
+            }
         }
         else
         {
-            loadDbData();
             if(categoryPages.size() > 0)
             {
                 loadPage("page");
             }
-            if(categoryPages.size() <= 0 && pageActiveLoaderCount <= 0 && workers_count <= 0)
+            else
             {
-                qWarning("Parser complete!!!");
-                if(!sitedb.open())
+                loadDbData();
+                if(categoryPages.size() > 0)
                 {
-                    qWarning("Can't connect to database!");
-                    exit(0);
+                    loadPage("page");
                 }
-                QSqlQuery query(sitedb);
-                query.prepare("UPDATE product_parsers SET date_last_parse = :last_parse;");
-                query.bindValue(":last_parse", QDateTime::currentDateTime().toTime_t());
-                query.exec();
-                sitedb.close();
+                if(categoryPages.size() <= 0 && pageActiveLoaderCount <= 0 && workers_count <= 0)
+                {
+                    qWarning("Parser complete!!!");
+                    qint64 totalTime = QDateTime::currentDateTime().toTime_t() - startTime;
+                    fprintf(stderr, "Total running time: %s seconds!", QString::number(totalTime).toLatin1().constData());
+                    QSqlQuery query(sitedb);
+                    query.prepare("UPDATE product_parsers SET date_last_parse = :last_parse;");
+                    query.bindValue(":last_parse", QDateTime::currentDateTime().toTime_t());
+                    query.exec();
+                    sitedb.close();
+                }
             }
         }
     }
@@ -205,8 +201,9 @@ void ParserMain::wpFinished(bool ok, WebPage *wp, ParserRow *r, QString a)
     else if(a == "link")
     {
         QThread *w = new QThread;
-        ProductParser *product_parser = new ProductParser(r, wp, settings);
+        ProductParser *product_parser = new ProductParser(r, wp, sitedb, settings);
         connect(product_parser, &ProductParser::parserEnd, this, &ParserMain::manage_parsers);
+        connect(product_parser, &ProductParser::sendLog, this, &ParserMain::printLog);
         connect(product_parser, &ProductParser::parserEnd, w, &QThread::quit);
         connect(w, &QThread::started, product_parser, &ProductParser::parse);
         connect(w, &QThread::finished, this, &ParserMain::threadFinished);
@@ -232,7 +229,6 @@ void ParserMain::loadPage(QString action)
                 wp->setUrl(QUrl(r->category_url));
             }
         }
-        sitedb.close();
     }
 }
 
@@ -240,11 +236,6 @@ void ParserMain::loadDbData()
 {
     if(this->disabled == false)
     {
-        if(!sitedb.open())
-        {
-            qWarning("Can't connect to database!");
-            exit(0);
-        }
         //start parsing
         QSqlQuery getParserQuery(sitedb);
         getParserQuery.prepare("SELECT * FROM product_parsers "
@@ -272,10 +263,7 @@ void ParserMain::loadDbData()
             p->logistic_price = getParserQuery.value(13).toFloat();
             p->end_time_selector = getParserQuery.value(14).toString();
             p->publicate_status = getParserQuery.value(15).toInt();
-            QJsonDocument doc = QJsonDocument::fromJson(getParserQuery.value(16).toString().toUtf8());
-           //get the jsonObject
-            QJsonObject jObject = doc.object();
-            p->additional_fields = jObject.toVariantMap();
+            p->additional_fields = getParserQuery.value(16).toString();
             p->price_formula = getParserQuery.value(17).toString();
             p->date_create = getParserQuery.value(18).toInt();
             p->date_last_parse = getParserQuery.value(19).toInt();
@@ -287,4 +275,9 @@ void ParserMain::loadDbData()
 ParserMain::~ParserMain()
 {
     emit stopAllThread();
+}
+
+void ParserMain::printLog(QString logMessage)
+{
+    qWarning(logMessage.toLatin1().constData());
 }

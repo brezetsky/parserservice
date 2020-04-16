@@ -7,6 +7,9 @@ WebPage::WebPage(ParserRow *r, QString a, QWebEngineProfile *profile, QObject *p
     action = a;
     row = r;
     connect(this, &WebPage::loadFinished, this, &WebPage::wLoadFinished);
+    this->profile()->cookieStore()->deleteAllCookies();
+    //this->profile()->clearHttpCache();
+    //this->profile()->clearAllVisitedLinks();
 }
 
 void WebPage::wLoadFinished(bool ok)

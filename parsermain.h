@@ -37,6 +37,7 @@ public slots:
     void manage_parsers(WebPage *w, QString sender_name);
     void threadFinished();
     void wpFinished(bool ok, WebPage *wp, ParserRow *r, QString a);
+    void printLog(QString logMessage);
 
 private:
     bool disabled = false;
@@ -50,6 +51,7 @@ private:
     void loadPage(QString action);
     qint64 pageActiveLoaderCount = 0;
     void loadDbData();
+    qint64 startTime = 0;
 };
 
 #endif // PARSERMAIN_H
