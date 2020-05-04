@@ -48,15 +48,12 @@ void ParserMain::load()
     QString AbsUploadPath;
     qint64 ParseInterval, MaxThreadsCount = 10;
     while (query.next()) {
-        ParseInterval = query.value(0).toInt();
-        AbsUploadPath = query.value(1).toString();
-        MaxThreadsCount = query.value(2).toInt();
+        settings->ParseInterval = query.value(0).toInt();
+        settings->AbsUploadPath = query.value(1).toString();
+        settings->MaxThreadsCount = query.value(2).toInt();
         settings->YandexTranslateKey = query.value(3).toString();
     }
     //query.~QSqlQuery();
-    settings->ParseInterval = ParseInterval;
-    settings->AbsUploadPath = AbsUploadPath;
-    settings->MaxThreadsCount = MaxThreadsCount;
     emit stopAllThread();
     parserOffset = 0;
     if(parseTimer->interval() < settings->ParseInterval * 1000)
@@ -279,5 +276,5 @@ ParserMain::~ParserMain()
 
 void ParserMain::printLog(QString logMessage)
 {
-    qWarning(logMessage.toLatin1().constData());
+    //qWarning(logMessage.toStdString().c_str());
 }
