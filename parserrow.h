@@ -21,6 +21,7 @@ struct ParserRow
     QString location_full_selector;
     float logistic_price;
     QString end_time_selector;
+    QString date_format;
     qint8 publicate_status;
     QString additional_fields;
     QString price_formula;

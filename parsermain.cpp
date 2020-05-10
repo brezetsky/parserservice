@@ -261,9 +261,10 @@ void ParserMain::loadDbData()
             p->end_time_selector = getParserQuery.value(14).toString();
             p->publicate_status = getParserQuery.value(15).toInt();
             p->additional_fields = getParserQuery.value(16).toString();
-            p->price_formula = getParserQuery.value(17).toString();
-            p->date_create = getParserQuery.value(18).toInt();
-            p->date_last_parse = getParserQuery.value(19).toInt();
+            p->date_format = getParserQuery.value(17).toString();
+            p->price_formula = getParserQuery.value(18).toString();
+            p->date_create = getParserQuery.value(19).toInt();
+            p->date_last_parse = getParserQuery.value(20).toInt();
             categoryPages.append(p);
         }
     }

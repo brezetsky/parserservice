@@ -2,6 +2,7 @@
 #define PRODOCTITEM_H
 
 #include <QObject>
+#include <QMap>
 
 struct ProductItem
 {

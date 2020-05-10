@@ -7,8 +7,11 @@
 #include <QJsonObject>
 #include <QVariant>
 #include <QSqlDatabase>
-#include <QSqlQuery>
 #include <QMap>
+#include <QList>
+#include <QUrlQuery>
+#include <QDateTime>
+#include <QSqlQuery>
 #include <QList>
 #include <QNetworkRequest>
 #include <QNetworkAccessManager>
@@ -45,6 +48,7 @@ private:
     QVariant product;
     void translate();
     QSqlDatabase database;
+    QMap<QString,QString> lang_fields;
     QList<QString> languages;
     ProductItem product_item;
 };

@@ -26,7 +26,7 @@ qt.product_item = {
 
 qt.product_item.article = qt.jQuery(qt.article_selector).text();
 qt.product_item.title = qt.jQuery(qt.title_selector).text();
-qt.product_item.description = qt.jQuery(qt.description_selector).text();
+qt.product_item.description = qt.jQuery(qt.description_selector).html();
 qt.product_item.location = qt.jQuery(qt.location_selector).text();
 qt.product_item.end_time = qt.jQuery(qt.end_time_selector).text();
 qt.product_item.ident_name = location.toString();
