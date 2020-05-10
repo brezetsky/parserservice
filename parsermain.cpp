@@ -277,5 +277,5 @@ ParserMain::~ParserMain()
 
 void ParserMain::printLog(QString logMessage)
 {
-    //qWarning(logMessage.toStdString().c_str());
+    qWarning(logMessage.toStdString().c_str());
 }

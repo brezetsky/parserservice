@@ -73,7 +73,7 @@ void ProductParser::translate()
         QNetworkRequest request(url);
         request.setHeader(QNetworkRequest::ContentTypeHeader,
             "application/x-www-form-urlencoded");
-        QNetworkAccessManager *mngr = new QNetworkAccessManager(this);
+        QNetworkAccessManager *mngr = new QNetworkAccessManager();
 #if defined(QUSEPROXY)
         QNetworkProxy proxy;
         proxy.setType(QNetworkProxy::HttpProxy);
@@ -99,8 +99,8 @@ void ProductParser::productCreate(QNetworkReply *reply)
     QVariantList text = translateMap["text"].toList();
     product_item.title["`title_" + lang + "`"] = "'" + text.at(0).toString() + "'";
     product_item.content["`content_" + lang + "`"] = "'" + text.at(1).toString() + "'";
-    product_item.anons["`anons_" + lang + "`"] = "'" + text.at(1).toString().left(254) + "'";
-    product_item.description["`description_" + lang + "`"] = "'" + text.at(1).toString().left(254) + "'";
+    product_item.anons["`anons_" + lang + "`"] = "'" + text.at(1).toString().remove(QRegExp("<[^>]*>")).left(254) + "'";
+    product_item.description["`description_" + lang + "`"] = "'" + text.at(1).toString().remove(QRegExp("<[^>]*>")).left(254) + "'";
     product_item.location["`location_" + lang + "`"] = "'" + text.at(2).toString() + "'";
     if(languages.size() == product_item.title.size())
     {
@@ -114,7 +114,43 @@ void ProductParser::productCreate(QNetworkReply *reply)
         product_item.ident_name = product_map["ident_name"].toString();
         product_item.slug = product_map["ident_name"].toString().section('/', -1);
         product_item.status = product_map["status"].toString();
-        product_item.end_time = QString::number(QDateTime::fromString(product_map["end_time"].toString(), row->date_format).toTime_t());
+        QString end_time = product_map["end_time"].toString();
+        qint64 utc_value = 0;
+        if(end_time.contains("CEST"))
+        {
+            utc_value = 1;
+            end_time = end_time.remove("CEST");
+        }
+        if(end_time.contains(" EET"))
+        {
+            utc_value = 1;
+            end_time = end_time.remove(" EET");
+        }
+        if(row->date_format == "d MM hh:mm yyyy")
+        {
+            end_time = end_time + " " + QDateTime::currentDateTime().toString("yyyy");
+        }
+        if(row->date_format == "MM d h:mm AP yyyy")
+        {
+            end_time = end_time + QDateTime::currentDateTime().toString("yyyy");
+        }
+        if(row->date_format == "d MM hh:mm")
+        {
+            row->date_format = row->date_format + " yyyy";
+            end_time = end_time + " " + QDateTime::currentDateTime().toString("yyyy");
+        }
+        if(row->date_format == "MM d h:mm AP")
+        {
+            row->date_format = row->date_format + " yyyy";
+            end_time = end_time + QDateTime::currentDateTime().toString("yyyy");
+        }
+        end_time = end_time.replace(0x00A0, " ");
+        int end_timedt = QDateTime::fromString(end_time, row->date_format).toTime_t();
+        if(utc_value != 0)
+        {
+            end_timedt = end_timedt + 3600;
+        }
+        product_item.end_time = QString::number(end_timedt);
         QSqlQuery productInsert(database);
         QList<QString> fields_title = product_item.title.keys();
         QString title_keys = fields_title.join(", ");
@@ -124,42 +160,45 @@ void ProductParser::productCreate(QNetworkReply *reply)
         QList<QString> fields_content = product_item.content.keys();
         QString content_keys = fields_content.join(", ");
         QList<QString> fields_content_values = product_item.content.values();
-        QString content_values = fields_content_values.join(", ");
+        QString content_values = fields_content_values.join(", ").replace("'", "\'");
 
         QList<QString> fields_anons = product_item.anons.keys();
         QString anons_keys = fields_anons.join(", ");
         QList<QString> fields_anons_values = product_item.anons.values();
-        QString anons_values = fields_anons_values.join(", ");
+        QString anons_values = fields_anons_values.join(", ").replace("'", "\'");
 
         QList<QString> fields_description = product_item.description.keys();
         QString description_keys = fields_description.join(", ");
         QList<QString> fields_description_values = product_item.description.values();
-        QString description_values = fields_description_values.join(", ");
+        QString description_values = fields_description_values.join(", ").replace("'", "\'");
 
         QList<QString> fields_location = product_item.location.keys();
         QString location_keys = fields_location.join(", ");
         QList<QString> fields_location_values = product_item.location.values();
-        QString location_values = fields_location_values.join(", ");
+        QString location_values = fields_location_values.join(", ").replace("'", "\'");
 
-        productInsert.prepare("INSERT products(:titles_names, :anons_names, :content_names, :description_names, :location_names, `article`, `category_id`, `price`, `end_time`, `slug`, `ident_name`) "
-                              "VALUES (:titles_values, :anons_values, :content_values, :description_values, :location_values, :article_value, :category_id_value, :price_value, :end_time_value, :slug_value, :ident_name_value);");
-        productInsert.bindValue(":titles_names", title_keys);
-        productInsert.bindValue(":anons_names", anons_keys);
-        productInsert.bindValue(":content_names", content_keys);
-        productInsert.bindValue(":description_names", description_keys);
-        productInsert.bindValue(":location_names", location_keys);
-        productInsert.bindValue(":titles_values", title_values);
-        productInsert.bindValue(":anons_values", anons_values);
-        productInsert.bindValue(":content_values", content_values);
-        productInsert.bindValue(":description_values", description_values);
-        productInsert.bindValue(":location_values", location_values);
-        productInsert.bindValue(":article_value", "'" + product_item.article + "'");
-        productInsert.bindValue(":category_id_value", "'" + product_item.category_id + "'");
-        productInsert.bindValue(":price_value", "'" + product_item.price + "'");
-        productInsert.bindValue(":end_time_value", "'" + product_item.end_time + "'");
-        productInsert.bindValue(":slug_value", "'" + product_item.slug + "'");
-        productInsert.bindValue(":ident_name_value", "'" + product_item.ident_name + "'");
+        productInsert.prepare("INSERT INTO products ("+ title_keys + ", " + anons_keys + ", " + content_keys + ", " + description_keys + ", " + location_keys + ", `article`, `category_id`, `price`, `end_time`, `slug`, `ident_name`) "
+                              "VALUES(" + title_values + ", " + anons_values + ", " + content_values + ", " + description_values + ", " + location_values + ", :article_value, :category_id_value, :price_value, :end_time_value, :slug_value, :ident_name_value);");
+        productInsert.bindValue(":article_value", product_item.article);
+        productInsert.bindValue(":category_id_value", product_item.category_id);
+        productInsert.bindValue(":price_value", product_item.price);
+        productInsert.bindValue(":end_time_value", product_item.end_time);
+        productInsert.bindValue(":slug_value", product_item.slug);
+        productInsert.bindValue(":ident_name_value", product_item.ident_name);
         productInsert.exec();
+        //emit sendLog(getLastExecutedQuery(productInsert));
         emit parserEnd(p, "ProductParser");
     }
+}
+
+QString ProductParser::getLastExecutedQuery(const QSqlQuery& query)
+{
+ QString str = query.lastQuery();
+ QMapIterator<QString, QVariant> it(query.boundValues());
+ while (it.hasNext())
+ {
+  it.next();
+  str.replace(it.key(),it.value().toString());
+ }
+ return str;
 }

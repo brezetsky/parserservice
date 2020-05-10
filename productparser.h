@@ -12,6 +12,7 @@
 #include <QUrlQuery>
 #include <QDateTime>
 #include <QSqlQuery>
+#include <QSqlError>
 #include <QList>
 #include <QNetworkRequest>
 #include <QNetworkAccessManager>
@@ -51,6 +52,7 @@ private:
     QMap<QString,QString> lang_fields;
     QList<QString> languages;
     ProductItem product_item;
+    QString getLastExecutedQuery(const QSqlQuery& query);
 };
 
 #endif // PRODUCTPARSER_H

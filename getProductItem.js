@@ -25,27 +25,62 @@ qt.product_item = {
 };
 
 qt.product_item.article = qt.jQuery(qt.article_selector).text();
-qt.product_item.title = qt.jQuery(qt.title_selector).text();
+qt.product_item.title = qt.jQuery(qt.title_selector).text().replace(qt.product_item.article, "");
 qt.product_item.description = qt.jQuery(qt.description_selector).html();
 qt.product_item.location = qt.jQuery(qt.location_selector).text();
-qt.product_item.end_time = qt.jQuery(qt.end_time_selector).text();
+qt.product_item.end_time = qt.jQuery(qt.end_time_selector).text().replace(" at", "");
+qt.product_item.end_time = qt.product_item.end_time.replace("Jan", "01");
+qt.product_item.end_time = qt.product_item.end_time.replace("JAN", "01");
+qt.product_item.end_time = qt.product_item.end_time.replace("Feb", "02");
+qt.product_item.end_time = qt.product_item.end_time.replace("FEB", "02");
+qt.product_item.end_time = qt.product_item.end_time.replace("Mar", "03");
+qt.product_item.end_time = qt.product_item.end_time.replace("MAR", "03");
+qt.product_item.end_time = qt.product_item.end_time.replace("Apr", "04");
+qt.product_item.end_time = qt.product_item.end_time.replace("APR", "04");
+qt.product_item.end_time = qt.product_item.end_time.replace("May", "05");
+qt.product_item.end_time = qt.product_item.end_time.replace("MAJ", "05");
+qt.product_item.end_time = qt.product_item.end_time.replace("Jun", "06");
+qt.product_item.end_time = qt.product_item.end_time.replace("JUN", "06");
+qt.product_item.end_time = qt.product_item.end_time.replace("Jul", "07");
+qt.product_item.end_time = qt.product_item.end_time.replace("JUL", "07");
+qt.product_item.end_time = qt.product_item.end_time.replace("Aug", "08");
+qt.product_item.end_time = qt.product_item.end_time.replace("AUG", "08");
+qt.product_item.end_time = qt.product_item.end_time.replace("Sep", "09");
+qt.product_item.end_time = qt.product_item.end_time.replace("SEP", "09");
+qt.product_item.end_time = qt.product_item.end_time.replace("Oct", "10");
+qt.product_item.end_time = qt.product_item.end_time.replace("OCT", "10");
+qt.product_item.end_time = qt.product_item.end_time.replace("Nov", "11");
+qt.product_item.end_time = qt.product_item.end_time.replace("NOV", "11");
+qt.product_item.end_time = qt.product_item.end_time.replace("Dec", "12");
+qt.product_item.end_time = qt.product_item.end_time.replace("DEC", "12");
 qt.product_item.ident_name = location.toString();
 qt.photoNum = 0;
 qt.jQuery(qt.photo_selector).each(function() {
     qt.dataSrc = qt.jQuery(this).data("src");
+    qt.srcSet = qt.jQuery(this).attr("srcset");
     qt.src = "";
     if(typeof qt.dataSrc !== typeof undefined && qt.dataSrc !== false)
     {
         qt.src = qt.dataSrc;
     }
+    else if(typeof qt.srcSet !== typeof undefined && qt.srcSet !== false)
+    {
+        qt.src = qt.srcSet.split(' 920w,')[0];
+    }
+
     else
     {
         qt.src = qt.jQuery(this).attr("src");
     }
     var phost = location.protocol+'//'+location.hostname;
-    if(qt.src.indexOf(location.hostname) == -1) {
+    if(qt.src.indexOf(location.hostname) == -1 && (typeof qt.srcSet === typeof undefined || qt.srcSet === false)) {
         qt.src = phost + qt.src;
     }
+    if(qt.src.indexOf("http:") == -1)
+    {
+        qt.src = "http:" + qt.src;
+    }
+
     qt.product_item.photos[qt.photoNum] = qt.src;
     qt.photoNum++;
 });
