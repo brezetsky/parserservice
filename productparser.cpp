@@ -52,7 +52,69 @@ void ProductParser::parse()
         p->runJavaScript("JSON.stringify(qt.product_item);",[this](const QVariant &tv) {
             //emit sendLog(tv.toString());
             product = tv;
-            translate();
+            QJsonDocument doc = QJsonDocument::fromJson(product.toString().toUtf8());
+           //get the jsonObject
+            QJsonObject jObject = doc.object();
+            QVariantMap product_map = jObject.toVariantMap();
+            QString ident_name = product_map["ident_name"].toString();
+            QSqlQuery productCheck(database);
+            productCheck.prepare("SELECT id FROM products WHERE ident_name = :in;");
+            productCheck.bindValue(":in", ident_name);
+            productCheck.exec();
+            if(productCheck.size() > 0)
+            {
+                productCheck.next();
+                int id = productCheck.value(0).toInt();
+                QString end_time = product_map["end_time"].toString();
+                qint64 utc_value = 0;
+                if(end_time.contains("CEST"))
+                {
+                    utc_value = 1;
+                    end_time = end_time.remove("CEST");
+                }
+                if(end_time.contains(" EET"))
+                {
+                    utc_value = 1;
+                    end_time = end_time.remove(" EET");
+                }
+                if(row->date_format == "d MM hh:mm yyyy")
+                {
+                    end_time = end_time + " " + QDateTime::currentDateTime().toString("yyyy");
+                }
+                if(row->date_format == "MM d h:mm AP yyyy")
+                {
+                    end_time = end_time + QDateTime::currentDateTime().toString("yyyy");
+                }
+                if(row->date_format == "d MM hh:mm")
+                {
+                    row->date_format = row->date_format + " yyyy";
+                    end_time = end_time + " " + QDateTime::currentDateTime().toString("yyyy");
+                }
+                if(row->date_format == "MM d h:mm AP")
+                {
+                    row->date_format = row->date_format + " yyyy";
+                    end_time = end_time + QDateTime::currentDateTime().toString("yyyy");
+                }
+                end_time = end_time.replace(0x00A0, " ");
+                int end_timedt = QDateTime::fromString(end_time, row->date_format).toTime_t();
+                if(utc_value != 0)
+                {
+                    end_timedt = end_timedt + 3600;
+                }
+                end_time = QString::number(end_timedt);
+                QString price = product_map["price"].toString();
+                QSqlQuery productUpdate(database);
+                productUpdate.prepare("UPDATE products SET end_time = :et, price = :pv WHERE id = :id;");
+                productUpdate.bindValue(":et", end_time);
+                productUpdate.bindValue(":pv", price);
+                productUpdate.bindValue(":id", id);
+                productUpdate.exec();
+                emit parserEnd(p, "ProductParser");
+            }
+            else
+            {
+                translate();
+            }
         });
     });
 }
