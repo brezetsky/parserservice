@@ -49,9 +49,11 @@ void ProductParser::parse()
     getProductItem = getProductItem.replace("{status}", QString::number(row->publicate_status));
     //emit sendLog(getProductItem);
     p->runJavaScript(getProductItem,[this](const QVariant &v) {
-        //emit sendLog(v.toString());
-        product = v;
-        translate();
+        p->runJavaScript("JSON.stringify(qt.product_item);",[this](const QVariant &tv) {
+            //emit sendLog(tv.toString());
+            product = tv;
+            translate();
+        });
     });
 }
 

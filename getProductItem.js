@@ -85,23 +85,56 @@ qt.jQuery(qt.photo_selector).each(function() {
     qt.photoNum++;
 });
 
-qt.orig_price = qt.jQuery(qt.price_selector).text().replace(/[^\d;]/g, '');
-qt.price_formula = qt.price_formula.replace(/{price}/g, qt.orig_price);
+qt.printPrice = function() {
+    qt.price_formula = qt.price_formula.replace(/{price}/g, qt.orig_price);
 
-for(var key in qt.additional_fields)
-{
-    qt.additional_field = qt.jQuery(qt.additional_fields[key]).text().replace(/[^\d;]/g, '');
-    qt.price_formula = qt.price_formula.replace(/{' + key + '}/g, qt.additional_field);
+    for(var key in qt.additional_fields)
+    {
+        qt.additional_field = qt.jQuery(qt.additional_fields[key]).text().replace(/[^\d;]/g, '');
+        qt.price_formula = qt.price_formula.replace(/{' + key + '}/g, qt.additional_field);
+    }
+
+    regex = new RegExp('^.*' + qt.location_etalon + '.*$','i');
+    if(regex.test(qt.jQuery(qt.location_selector).text()))
+    {
+        qt.logistic_price = "0";
+    }
+
+    qt.price_formula = qt.price_formula.replace(/{lprice}/g, qt.logistic_price);
+
+    qt.product_item.price = eval(qt.price_formula);
+    qt.product_item.price = Math.ceil((qt.product_item.price)*100)/100;
 }
 
-if(qt.jQuery(qt.location_selector).text() == qt.location_etalon)
-{
-    qt.logistic_price = "0";
+qt.calcUah = function(response){
+    qt.orig_price = qt.orig_price * response[0].rate;
+    qt.jQuery.ajax({
+                       url: "https://bank.gov.ua/NBUStatService/v1/statdirectory/exchange?valcode=EUR&json",
+                       async: false,
+                       dataType: "json",
+                       success: qt.calcEur
+                   });
 }
 
-qt.price_formula = qt.price_formula.replace(/{lprice}/g, qt.logistic_price);
+qt.calcEur = function(response){
+    qt.orig_price = qt.orig_price / response[0].rate;
+    qt.printPrice();
+}
 
-qt.product_item.price = eval(qt.price_formula);
+qt.orig_price = qt.jQuery(qt.price_selector).text();
 
-JSON.stringify(qt.product_item);
+if(new RegExp("^.*SEK|kr.*$", "i").test(qt.orig_price))
+{
+    qt.orig_price = qt.orig_price.replace(/[^\d;]/g, '');
+    qt.jQuery.ajax({
+                       url: "https://bank.gov.ua/NBUStatService/v1/statdirectory/exchange?valcode=SEK&json",
+                       async: false,
+                       dataType: "json",
+                       success: qt.calcUah
+                   });
+}
+else {
+    qt.orig_price = qt.orig_price.replace(/[^\d;]/g, '');
+    qt.printPrice();
+}
 
