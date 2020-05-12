@@ -6,10 +6,6 @@ ParserMain::ParserMain(ParserSettings *s, QObject *parent) : QObject(parent)
     QString date = cdt.toString("dd.MM.yyyy") + " 00:00:00";
     QDateTime bdt = QDateTime::fromString(date, "dd.MM.yyyy HH:mm:ss");
     settings = s;
-#if defined(QTEST)
-    qWarning("Test defined");
-    exit(0);
-#endif
     sitedb = QSqlDatabase::addDatabase("QMYSQL", "pmdb");
     sitedb.setHostName(settings->DBHostName);
     sitedb.setDatabaseName(settings->DBName);
@@ -20,7 +16,7 @@ ParserMain::ParserMain(ParserSettings *s, QObject *parent) : QObject(parent)
     parseTimer = new QTimer(this);
     parseTimer->setInterval(firstTimer * 1000);
     connect(parseTimer, SIGNAL(timeout()),this,SLOT(load()));
-    parseTimer->setSingleShot(true);
+    //parseTimer->setSingleShot(true);
     parseTimer->start();
 }
 
@@ -41,7 +37,7 @@ void ParserMain::load()
         qWarning("Can't connect to database!");
         exit(0);
     }
-    qWarning("Parser Start!!!");
+    //qWarning("Parser Start!!!");
     startTime = QDateTime::currentDateTime().toTime_t();
     QSqlQuery query(sitedb);
     query.exec("SELECT parse_interval, abs_upload_path, max_threads_count, yandex_translate_key FROM site_settings");
@@ -127,9 +123,9 @@ void ParserMain::manage_parsers(WebPage *wp, QString sender_name)
         workers_count = 0;
         pageActiveLoaderCount = 0;
         parserOffset = 0;
-        qWarning("Parser complete!!!");
-        qint64 totalTime = QDateTime::currentDateTime().toTime_t() - startTime;
-        fprintf(stderr, "Total running time: %s seconds!", QString::number(totalTime).toLatin1().constData());
+        //qWarning("Parser complete!!!");
+        //qint64 totalTime = QDateTime::currentDateTime().toTime_t() - startTime;
+        //fprintf(stderr, "Total running time: %s seconds!", QString::number(totalTime).toLatin1().constData());
         sitedb.close();
     }
     else {
@@ -159,7 +155,7 @@ void ParserMain::manage_parsers(WebPage *wp, QString sender_name)
                 }
                 if(categoryPages.size() <= 0 && pageActiveLoaderCount <= 0 && workers_count <= 0)
                 {
-                    qWarning("Parser complete!!!");
+                    //qWarning("Parser complete!!!");
                     qint64 totalTime = QDateTime::currentDateTime().toTime_t() - startTime;
                     fprintf(stderr, "Total running time: %s seconds!", QString::number(totalTime).toLatin1().constData());
                     QSqlQuery query(sitedb);
@@ -218,7 +214,7 @@ void ParserMain::loadPage(QString action)
             if(categoryPages.size() > 0)
             {
                 ParserRow *r = categoryPages.takeFirst();
-                fprintf(stderr, "Load page: %s!\n", r->category_url.toLatin1().constData());
+                //fprintf(stderr, "Load page: %s!\n", r->category_url.toLatin1().constData());
                 workers_count++;
                 pageActiveLoaderCount++;
                 WebPage *wp = new WebPage(r, action);

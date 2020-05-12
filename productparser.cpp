@@ -169,7 +169,6 @@ void ProductParser::productCreate(QNetworkReply *reply)
     if(languages.size() == product_item.title.size())
     {
         QJsonDocument doc = QJsonDocument::fromJson(product.toString().toUtf8());
-       //get the jsonObject
         QJsonObject jObject = doc.object();
         QVariantMap product_map = jObject.toVariantMap();
         product_item.article = product_map["article"].toString();
@@ -178,6 +177,8 @@ void ProductParser::productCreate(QNetworkReply *reply)
         product_item.ident_name = product_map["ident_name"].toString();
         product_item.slug = product_map["ident_name"].toString().section('/', -1);
         product_item.status = product_map["status"].toString();
+        QJsonObject jPhotos = product_map["photos"].toJsonObject();
+        product_item.photos = jPhotos.toVariantMap();
         QString end_time = product_map["end_time"].toString();
         qint64 utc_value = 0;
         if(end_time.contains("CEST"))
@@ -250,7 +251,174 @@ void ProductParser::productCreate(QNetworkReply *reply)
         productInsert.bindValue(":slug_value", product_item.slug);
         productInsert.bindValue(":ident_name_value", product_item.ident_name);
         productInsert.exec();
-        //emit sendLog(getLastExecutedQuery(productInsert));
+        QSqlQuery productGet(database);
+        productGet.prepare("SELECT id FROM products WHERE ident_name = :in;");
+        productGet.bindValue(":in", product_item.ident_name);
+        productGet.exec();
+        productGet.next();
+        product_item.id = productGet.value(0).toInt();
+        QDir().mkpath(settings->AbsUploadPath + "/products/" + QString::number(product_item.id) + "/main");
+        QDir().mkpath(settings->AbsUploadPath + "/products/" + QString::number(product_item.id) + "/additional");
+        QFile folder_id(settings->AbsUploadPath + "/products/" + QString::number(product_item.id));
+        QFile::Permissions permissions = folder_id.permissions();
+        permissions.setFlag(QFile::ExeOwner);
+        permissions.setFlag(QFile::ReadOwner);
+        permissions.setFlag(QFile::WriteOwner);
+        permissions.setFlag(QFile::ExeUser);
+        permissions.setFlag(QFile::ReadUser);
+        permissions.setFlag(QFile::WriteUser);
+        permissions.setFlag(QFile::ExeGroup);
+        permissions.setFlag(QFile::ReadGroup);
+        permissions.setFlag(QFile::WriteGroup);
+        permissions.setFlag(QFile::ExeOther);
+        permissions.setFlag(QFile::ReadOther);
+        permissions.setFlag(QFile::WriteOther);
+        folder_id.setPermissions(permissions);
+        QFile folder_main(settings->AbsUploadPath + "/products/" + QString::number(product_item.id) + "/main");
+        folder_main.setPermissions(permissions);
+        QFile folder_additional(settings->AbsUploadPath + "/products/" + QString::number(product_item.id) + "/additional");
+        folder_additional.setPermissions(permissions);
+        uploadPhoto();
+    }
+}
+
+void ProductParser::uploadPhoto()
+{
+    QString pkey = product_item.photos.firstKey();
+    QString link = product_item.photos[pkey].toString();
+    product_item.photos.remove(pkey);
+    QNetworkAccessManager *image_loader = new QNetworkAccessManager();
+    connect(image_loader, &QNetworkAccessManager::finished, this, &ProductParser::savePhotos);
+    QUrl ilink = QUrl(link);
+    QNetworkRequest r(ilink);
+    image_loader->get(r);
+}
+
+void ProductParser::savePhotos(QNetworkReply *reply)
+{
+    if(main_image)
+    {
+        QPixmap image;
+        image.loadFromData(reply->readAll());
+        QString link = reply->url().toString();
+        QString fullfileName = link.right(link.size()-link.lastIndexOf("/")-1);
+        QString fileName = fullfileName.left(fullfileName.indexOf("."));
+        QString ext = fullfileName.right(fullfileName.size()-fullfileName.lastIndexOf("."));
+        image.save(settings->AbsUploadPath + "/products/" + QString::number(product_item.id) + "/main/" + fullfileName);
+        QFile image_file(settings->AbsUploadPath + "/products/" + QString::number(product_item.id) + "/main/" + fullfileName);
+        QFile::Permissions permissions;
+        permissions.setFlag(QFile::ReadOwner);
+        permissions.setFlag(QFile::WriteOwner);
+        permissions.setFlag(QFile::ReadUser);
+        permissions.setFlag(QFile::WriteUser);
+        permissions.setFlag(QFile::ReadGroup);
+        permissions.setFlag(QFile::WriteGroup);
+        permissions.setFlag(QFile::ReadOther);
+        permissions.setFlag(QFile::WriteOther);
+        image_file.setPermissions(permissions);
+        QMimeDatabase db;
+        QMimeType mime = db.mimeTypeForFile(settings->AbsUploadPath + "/products/" + QString::number(product_item.id) + "/main/" + fullfileName, QMimeDatabase::MatchContent);
+        QString mime_type = mime.name();
+        if(image.width() >= 1000)
+        {
+            QPixmap image_2000 = image.scaled(1000, 1000, Qt::KeepAspectRatio);
+            image_2000.save(settings->AbsUploadPath + "/products/" + QString::number(product_item.id) + "/main/" + fileName + "_2000w" + ext);
+            QFile image_file_2000w(settings->AbsUploadPath + "/products/" + QString::number(product_item.id) + "/main/" + fileName + "_2000w" + ext);
+            image_file_2000w.setPermissions(permissions);
+        }
+        if(image.width() >= 550)
+        {
+            QPixmap image_1000 = image.scaled(550, 550, Qt::KeepAspectRatio);
+            image_1000.save(settings->AbsUploadPath + "/products/" + QString::number(product_item.id) + "/main/" + fileName + "_1000w" + ext);
+            QFile image_file_1000w(settings->AbsUploadPath + "/products/" + QString::number(product_item.id) + "/main/" + fileName + "_1000w" + ext);
+            image_file_1000w.setPermissions(permissions);
+        }
+        if(image.width() >= 400)
+        {
+            QPixmap image_767 = image.scaled(400, 400, Qt::KeepAspectRatio);
+            image_767.save(settings->AbsUploadPath + "/products/" + QString::number(product_item.id) + "/main/" + fileName + "_767w" + ext);
+            QFile image_file_767w(settings->AbsUploadPath + "/products/" + QString::number(product_item.id) + "/main/" + fileName + "_767w" + ext);
+            image_file_767w.setPermissions(permissions);
+        }
+        QSqlQuery imageInserter(database);
+        imageInserter.prepare("INSERT INTO files (table_name, record_id, filename, fullfilename, ext, fullextension, system_type) VALUES('products', :product_id, :filenamev, :fullfilenamev, :extv, :fullextensionv, 'main')");
+        imageInserter.bindValue(":product_id", product_item.id);
+        imageInserter.bindValue(":filenamev", fileName);
+        imageInserter.bindValue(":fullfilenamev", fullfileName);
+        imageInserter.bindValue(":extv", ext);
+        imageInserter.bindValue(":fullextensionv", mime_type);
+        imageInserter.exec();
+        QSqlQuery imageIdGetter(database);
+        imageIdGetter.prepare("SELECT id FROM files WHERE table_name = 'products' AND record_id = :product_id");
+        imageIdGetter.bindValue(":product_id", product_item.id);
+        imageIdGetter.exec();
+        imageIdGetter.next();
+        int image_id = imageIdGetter.value(0).toInt();
+        QSqlQuery productUpdate(database);
+        productUpdate.prepare("UPDATE products SET main_img_id = :mid WHERE id = :id;");
+        productUpdate.bindValue(":mid", image_id);
+        productUpdate.bindValue(":id", product_item.id);
+        productUpdate.exec();
+        main_image = false;
+    }
+    else
+    {
+        QPixmap image;
+        image.loadFromData(reply->readAll());
+        QString link = reply->url().toString();
+        QString fullfileName = link.right(link.size()-link.lastIndexOf("/")-1);
+        QString fileName = fullfileName.left(fullfileName.indexOf("."));
+        QString ext = fullfileName.right(fullfileName.size()-fullfileName.lastIndexOf("."));
+        image.save(settings->AbsUploadPath + "/products/" + QString::number(product_item.id) + "/additional/" + fullfileName);
+        QFile image_file(settings->AbsUploadPath + "/products/" + QString::number(product_item.id) + "/additional/" + fullfileName);
+        QFile::Permissions permissions;
+        permissions.setFlag(QFile::ReadOwner);
+        permissions.setFlag(QFile::WriteOwner);
+        permissions.setFlag(QFile::ReadUser);
+        permissions.setFlag(QFile::WriteUser);
+        permissions.setFlag(QFile::ReadGroup);
+        permissions.setFlag(QFile::WriteGroup);
+        permissions.setFlag(QFile::ReadOther);
+        permissions.setFlag(QFile::WriteOther);
+        image_file.setPermissions(permissions);
+        QMimeDatabase db;
+        QMimeType mime = db.mimeTypeForFile(settings->AbsUploadPath + "/products/" + QString::number(product_item.id) + "/additional/" + fullfileName, QMimeDatabase::MatchContent);
+        QString mime_type = mime.name();
+        if(image.width() >= 1000)
+        {
+            QPixmap image_2000 = image.scaled(1000, 1000, Qt::KeepAspectRatio);
+            image_2000.save(settings->AbsUploadPath + "/products/" + QString::number(product_item.id) + "/additional/" + fileName + "_2000w" + ext);
+            QFile image_file_2000w(settings->AbsUploadPath + "/products/" + QString::number(product_item.id) + "/additional/" + fileName + "_2000w" + ext);
+            image_file_2000w.setPermissions(permissions);
+        }
+        if(image.width() >= 550)
+        {
+            QPixmap image_1000 = image.scaled(550, 550, Qt::KeepAspectRatio);
+            image_1000.save(settings->AbsUploadPath + "/products/" + QString::number(product_item.id) + "/additional/" + fileName + "_1000w" + ext);
+            QFile image_file_1000w(settings->AbsUploadPath + "/products/" + QString::number(product_item.id) + "/additional/" + fileName + "_1000w" + ext);
+            image_file_1000w.setPermissions(permissions);
+        }
+        if(image.width() >= 400)
+        {
+            QPixmap image_767 = image.scaled(400, 400, Qt::KeepAspectRatio);
+            image_767.save(settings->AbsUploadPath + "/products/" + QString::number(product_item.id) + "/additional/" + fileName + "_767w" + ext);
+            QFile image_file_767w(settings->AbsUploadPath + "/products/" + QString::number(product_item.id) + "/additional/" + fileName + "_767w" + ext);
+            image_file_767w.setPermissions(permissions);
+        }
+        QSqlQuery imageInserter(database);
+        imageInserter.prepare("INSERT INTO files (table_name, record_id, filename, fullfilename, ext, fullextension, system_type) VALUES('products', :product_id, :filenamev, :fullfilenamev, :extv, :fullextensionv, 'additional')");
+        imageInserter.bindValue(":product_id", product_item.id);
+        imageInserter.bindValue(":filenamev", fileName);
+        imageInserter.bindValue(":fullfilenamev", fullfileName);
+        imageInserter.bindValue(":extv", ext);
+        imageInserter.bindValue(":fullextensionv", mime_type);
+        imageInserter.exec();
+    }
+    if(product_item.photos.size() > 0)
+    {
+        uploadPhoto();
+    }
+    else {
         emit parserEnd(p, "ProductParser");
     }
 }

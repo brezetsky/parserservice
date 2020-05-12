@@ -9,6 +9,8 @@
 #include <QSqlDatabase>
 #include <QMap>
 #include <QList>
+#include <QDir>
+#include <QMimeDatabase>
 #include <QUrlQuery>
 #include <QDateTime>
 #include <QSqlQuery>
@@ -41,6 +43,7 @@ public slots:
 
 private slots:
     void productCreate(QNetworkReply *reply);
+    void savePhotos(QNetworkReply *reply);
 
 private:
     WebPage *p;
@@ -53,6 +56,9 @@ private:
     QList<QString> languages;
     ProductItem product_item;
     QString getLastExecutedQuery(const QSqlQuery& query);
+    void uploadPhoto();
+    bool main_image = true;
+
 };
 
 #endif // PRODUCTPARSER_H

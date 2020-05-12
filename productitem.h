@@ -6,12 +6,13 @@
 
 struct ProductItem
 {
-    QString id = "0";
+    int id = 0;
     QString article;
     QString category_id;
     QMap<QString,QString> title;
     QMap<QString,QString> anons;
     QString main_img_id;
+    QVariantMap photos;
     QMap<QString,QString> content;
     QString price;
     QMap<QString,QString> location;
