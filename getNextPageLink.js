@@ -2,7 +2,7 @@ var result = false;
 var phost = location.protocol+'//'+location.hostname;
 if(qt.jQuery('{next_page_selector}').length > 0)
 {
-    if(qt.jQuery('{next_page_selector}')[0].tagName == "a")
+    if(qt.jQuery('{next_page_selector}')[0].tagName == "A")
     {
         result = qt.jQuery('{next_page_selector}').attr("href");
     }

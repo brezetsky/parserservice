@@ -46,3 +46,10 @@ HEADERS += \
 
 RESOURCES += \
     jsparser.qrc
+
+unix:!macx: LIBS += -L$$PWD/other_libs/ -lcurl
+
+INCLUDEPATH += $$PWD/other_libs
+DEPENDPATH += $$PWD/other_libs
+
+unix:!macx: PRE_TARGETDEPS += $$PWD/other_libs/libcurl.a

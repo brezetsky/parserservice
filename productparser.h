@@ -17,7 +17,9 @@
 #include <QSqlError>
 #include <QList>
 #include <QNetworkRequest>
-#include <QNetworkAccessManager>
+#include <QWebEnginePage>
+#include <curl/curl.h>
+#include <stdio.h>
 #include <QNetworkReply>
 #if defined(QUSEPROXY)
 #include <QNetworkProxy>
@@ -42,11 +44,16 @@ public slots:
     void parse();
 
 private slots:
-    void productCreate(QNetworkReply *reply);
-    void savePhotos(QNetworkReply *reply);
+    void savePhotos(QString l);
+    void getTranslate();
 
 private:
+    static size_t callbackfunction(void *ptr, size_t size, size_t nmemb, void* userdata);
+    bool download_image(char* url, QString path);
+    void productCreate(QString reply);
     WebPage *p;
+    QWebEnginePage *pt;
+    QWebEnginePage *pi;
     ParserRow *row;
     ParserSettings *settings;
     QVariant product;

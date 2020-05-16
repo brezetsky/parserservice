@@ -35,6 +35,7 @@ void PageParser::parse()
 
 void PageParser::runDestructor(const QVariant &v)
 {
+    //qWarning(v.toString().toLatin1().constData());
     if(v.toString() != "false")
     {
         row->category_url = v.toString();

@@ -6,7 +6,7 @@ qt.description_selector = "{description_selector}";
 qt.location_selector = "{location_selector}";
 qt.location_etalon = "{location_etalon}";
 qt.location_full_selector = "{location_full_selector}";
-qt.logistic_price = "{logistic_price}";
+qt.logistic_price = "{logistic_price_value}";
 qt.end_time_selector = "{end_time_selector}";
 qt.additional_fields = JSON.parse("{additional_fields}");
 qt.price_formula = "{price_formula}";
@@ -76,7 +76,7 @@ qt.jQuery(qt.photo_selector).each(function() {
     if(qt.src.indexOf(location.hostname) == -1 && (typeof qt.srcSet === typeof undefined || qt.srcSet === false)) {
         qt.src = phost + qt.src;
     }
-    if(qt.src.indexOf("http:") == -1)
+    if(qt.src.indexOf("http") == -1)
     {
         qt.src = "http:" + qt.src;
     }
@@ -100,10 +100,12 @@ qt.printPrice = function() {
         qt.logistic_price = "0";
     }
 
-    qt.price_formula = qt.price_formula.replace(/{lprice}/g, qt.logistic_price);
+    qt.price_formula = qt.price_formula.replace(/{logistic_price}/g, qt.logistic_price);
 
+    //console.log(qt.logistic_price);
     qt.product_item.price = eval(qt.price_formula);
     qt.product_item.price = Math.ceil((qt.product_item.price)*100)/100;
+    //console.log(qt.product_item.price);
 }
 
 qt.calcUah = function(response){
