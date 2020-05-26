@@ -73,10 +73,10 @@ void ProductParser::parse()
                     utc_value = 1;
                     end_time = end_time.remove("CEST");
                 }
-                if(end_time.contains(" EET"))
+                if(end_time.contains("EET"))
                 {
                     utc_value = 1;
-                    end_time = end_time.remove(" EET");
+                    end_time = end_time.remove("EET");
                 }
                 if(row->date_format == "d MM hh:mm yyyy")
                 {
@@ -96,25 +96,58 @@ void ProductParser::parse()
                     row->date_format = row->date_format + " yyyy";
                     end_time = end_time + QDateTime::currentDateTime().toString("yyyy");
                 }
-                if(row->date_format == "d MM yyyy h:mm")
-                {
-                    row->date_format = row->date_format + " ";
-                }
+                end_time = end_time.remove(QRegExp("^\\s+"));
+                end_time = end_time.remove(QRegExp("\\s+$"));
+                end_time = end_time.replace(QRegExp("\\s+"), " ");
                 end_time = end_time.replace(QRegExp("\\s"), "-");
-                int end_timedt = QDateTime::fromString(end_time, row->date_format).toTime_t();
-                if(utc_value != 0)
+                row->date_format = row->date_format.replace(QRegExp("\\s"), "-");
+                //qWarning(end_time.toLatin1().constData());
+                //qWarning(row->date_format.toLatin1().constData());
+                uint end_timedt = QDateTime::fromString(end_time, row->date_format).toTime_t();
+                if(end_timedt > 100000000)
                 {
-                    end_timedt = end_timedt + 3600;
+                    if(utc_value != 0)
+                    {
+                        end_timedt = end_timedt + 3600;
+                    }
+                    end_timedt = end_timedt - 86400;
+                    if(end_timedt > QDateTime::currentDateTime().toTime_t())
+                    {
+                        end_time = QString::number(end_timedt);
+                        //qWarning(end_time.toLatin1().constData());
+                        QString price = product_map["price"].toString();
+                        QSqlQuery productUpdate(database);
+                        productUpdate.prepare("UPDATE products SET end_time = :et, price = :pv WHERE id = :id;");
+                        productUpdate.bindValue(":et", end_time);
+                        productUpdate.bindValue(":pv", price);
+                        productUpdate.bindValue(":id", id);
+                        if(!productUpdate.exec())
+                        {
+                            QSqlQuery logInsert(database);
+                            logInsert.prepare("INSERT INTO service_logs (code,message,link,create_dt) VALUES(:code_value,:message_value,:link_value,:create_dt_value);");
+                            logInsert.bindValue(":code_value", 10);
+                            logInsert.bindValue(":message_value", productUpdate.lastError().text());
+                            logInsert.bindValue(":link_value", ident_name);
+                            logInsert.bindValue(":create_dt_value", QDateTime::currentDateTime().toTime_t());
+                            logInsert.exec();
+                            emit parserEnd(p, "ProductParser");
+                        }
+                        else
+                        {
+                            emit parserEnd(p, "ProductParser");
+                        }
+                    }
                 }
-                end_time = QString::number(end_timedt);
-                QString price = product_map["price"].toString();
-                QSqlQuery productUpdate(database);
-                productUpdate.prepare("UPDATE products SET end_time = :et, price = :pv WHERE id = :id;");
-                productUpdate.bindValue(":et", end_time);
-                productUpdate.bindValue(":pv", price);
-                productUpdate.bindValue(":id", id);
-                productUpdate.exec();
-                emit parserEnd(p, "ProductParser");
+                else {
+                    QSqlQuery logInsert(database);
+                    logInsert.prepare("INSERT INTO service_logs (code,message,link,create_dt) VALUES(:code_value,:message_value,:link_value,:create_dt_value);");
+                    logInsert.bindValue(":code_value", 11);
+                    logInsert.bindValue(":message_value", "End date of auction not correct!");
+                    logInsert.bindValue(":link_value", ident_name);
+                    logInsert.bindValue(":create_dt_value", QDateTime::currentDateTime().toTime_t());
+                    logInsert.exec();
+                    emit parserEnd(p, "ProductParser");
+                }
             }
             else
             {
@@ -251,179 +284,218 @@ void ProductParser::productCreate(QString reply)
                 row->date_format = row->date_format + " yyyy";
                 end_time = end_time + QDateTime::currentDateTime().toString("yyyy");
             }
-            if(row->date_format == "d MM yyyy h:mm")
-            {
-                row->date_format = row->date_format + " ";
-            }
+            end_time = end_time.remove(QRegExp("^\\s+"));
+            end_time = end_time.remove(QRegExp("\\s+$"));
+            end_time = end_time.replace(QRegExp("\\s+"), " ");
             end_time = end_time.replace(QRegExp("\\s"), "-");
             row->date_format = row->date_format.replace(QRegExp("\\s"), "-");
             //qWarning(end_time.toLatin1().constData());
+            //qWarning(row->date_format.toLatin1().constData());
             QDateTime dt = QDateTime::fromString(end_time, row->date_format);
-            int end_timedt = dt.toTime_t();
+            uint end_timedt = dt.toTime_t();
             //qWarning(QString::number(end_timedt).toLatin1().constData());
-            if(utc_value != 0)
+            if(end_timedt > 100000000)
             {
-                end_timedt = end_timedt + 3600;
-            }
-            //qWarning(QString::number(end_timedt).toLatin1().constData());
-            product_item.end_time = QString::number(end_timedt);
-            //qWarning("Parser ProductParser productCreate255!!!");
-            QSqlQuery productInsert(database);
-            QList<QString> fields_title = product_item.title.keys();
-            QString title_keys = fields_title.join(", ");
-            QList<QString> fields_title_values = product_item.title.values();
-            QString title_values = "";
-            foreach(QString fName, fields_title)
-            {
-                if(title_values == "")
+                if(utc_value != 0)
                 {
-                    title_values = ":" + fName;
+                    end_timedt = end_timedt + 3600;
                 }
-                else {
-                    title_values = title_values + ", :" + fName;
-                }
-            }
-            title_values.replace("`", "");
-
-            QList<QString> fields_content = product_item.content.keys();
-            QString content_keys = fields_content.join(", ");
-            QList<QString> fields_content_values = product_item.content.values();
-            QString content_values = "";
-            foreach(QString fName, fields_content)
-            {
-                if(content_values == "")
+                end_timedt = end_timedt - 86400;
+                if(end_timedt > QDateTime::currentDateTime().toTime_t())
                 {
-                    content_values = ":" + fName;
-                }
-                else {
-                    content_values = content_values + ", :" + fName;
-                }
-            }
-            content_values.replace("`", "");
+                    //qWarning(QString::number(end_timedt).toLatin1().constData());
+                    product_item.end_time = QString::number(end_timedt);
+                    //qWarning("Parser ProductParser productCreate255!!!");
+                    QSqlQuery productInsert(database);
+                    QList<QString> fields_title = product_item.title.keys();
+                    QString title_keys = fields_title.join(", ");
+                    QList<QString> fields_title_values = product_item.title.values();
+                    QString title_values = "";
+                    foreach(QString fName, fields_title)
+                    {
+                        if(title_values == "")
+                        {
+                            title_values = ":" + fName;
+                        }
+                        else {
+                            title_values = title_values + ", :" + fName;
+                        }
+                    }
+                    title_values.replace("`", "");
 
-            QList<QString> fields_anons = product_item.anons.keys();
-            QString anons_keys = fields_anons.join(", ");
-            QList<QString> fields_anons_values = product_item.anons.values();
-            QString anons_values = "";
-            foreach(QString fName, fields_anons)
-            {
-                if(anons_values == "")
-                {
-                    anons_values = ":" + fName;
-                }
-                else {
-                    anons_values = anons_values + ", :" + fName;
-                }
-            }
-            anons_values.replace("`", "");
+                    QList<QString> fields_content = product_item.content.keys();
+                    QString content_keys = fields_content.join(", ");
+                    QList<QString> fields_content_values = product_item.content.values();
+                    QString content_values = "";
+                    foreach(QString fName, fields_content)
+                    {
+                        if(content_values == "")
+                        {
+                            content_values = ":" + fName;
+                        }
+                        else {
+                            content_values = content_values + ", :" + fName;
+                        }
+                    }
+                    content_values.replace("`", "");
 
-            QList<QString> fields_description = product_item.description.keys();
-            QString description_keys = fields_description.join(", ");
-            QList<QString> fields_description_values = product_item.description.values();
-            QString description_values = "";
-            foreach(QString fName, fields_description)
-            {
-                if(description_values == "")
-                {
-                    description_values = ":" + fName;
-                }
-                else {
-                    description_values = description_values + ", :" + fName;
-                }
-            }
-            description_values.replace("`", "");
+                    QList<QString> fields_anons = product_item.anons.keys();
+                    QString anons_keys = fields_anons.join(", ");
+                    QList<QString> fields_anons_values = product_item.anons.values();
+                    QString anons_values = "";
+                    foreach(QString fName, fields_anons)
+                    {
+                        if(anons_values == "")
+                        {
+                            anons_values = ":" + fName;
+                        }
+                        else {
+                            anons_values = anons_values + ", :" + fName;
+                        }
+                    }
+                    anons_values.replace("`", "");
 
-            QList<QString> fields_location = product_item.location.keys();
-            QString location_keys = fields_location.join(", ");
-            QList<QString> fields_location_values = product_item.location.values();
-            QString location_values = "";
-            foreach(QString fName, fields_location)
-            {
-                if(location_values == "")
-                {
-                    location_values = ":" + fName;
-                }
-                else {
-                    location_values = location_values + ", :" + fName;
-                }
-            }
-            location_values.replace("`", "");
-            //qWarning(title_values.toLatin1().constData());
+                    QList<QString> fields_description = product_item.description.keys();
+                    QString description_keys = fields_description.join(", ");
+                    QList<QString> fields_description_values = product_item.description.values();
+                    QString description_values = "";
+                    foreach(QString fName, fields_description)
+                    {
+                        if(description_values == "")
+                        {
+                            description_values = ":" + fName;
+                        }
+                        else {
+                            description_values = description_values + ", :" + fName;
+                        }
+                    }
+                    description_values.replace("`", "");
 
-            productInsert.prepare("INSERT INTO products ("+ title_keys + ", " + anons_keys + ", " + content_keys + ", " + description_keys + ", " + location_keys + ", `article`, `category_id`, `price`, `end_time`, `slug`, `ident_name`) "
-                                  "VALUES(" + title_values + ", " + anons_values + ", " + content_values + ", " + description_values + ", " + location_values + ", :article_value, :category_id_value, :price_value, :end_time_value, :slug_value, :ident_name_value);");
-            foreach(QString key, product_item.title.keys())
-            {
-                //qWarning(key.toLatin1().constData());
-                QString fn = ":" + key;
-                fn = fn.replace("`", "");
-                //qWarning(key.toLatin1().constData());
-                //qWarning(fn.toLatin1().constData());
-                productInsert.bindValue(fn, product_item.title[key]);
+                    QList<QString> fields_location = product_item.location.keys();
+                    QString location_keys = fields_location.join(", ");
+                    QList<QString> fields_location_values = product_item.location.values();
+                    QString location_values = "";
+                    foreach(QString fName, fields_location)
+                    {
+                        if(location_values == "")
+                        {
+                            location_values = ":" + fName;
+                        }
+                        else {
+                            location_values = location_values + ", :" + fName;
+                        }
+                    }
+                    location_values.replace("`", "");
+                    //qWarning(title_values.toLatin1().constData());
+
+                    productInsert.prepare("INSERT INTO products ("+ title_keys + ", " + anons_keys + ", " + content_keys + ", " + description_keys + ", " + location_keys + ", `article`, `category_id`, `price`, `end_time`, `slug`, `ident_name`) "
+                                          "VALUES(" + title_values + ", " + anons_values + ", " + content_values + ", " + description_values + ", " + location_values + ", :article_value, :category_id_value, :price_value, :end_time_value, :slug_value, :ident_name_value);");
+                    foreach(QString key, product_item.title.keys())
+                    {
+                        //qWarning(key.toLatin1().constData());
+                        QString fn = ":" + key;
+                        fn = fn.replace("`", "");
+                        //qWarning(key.toLatin1().constData());
+                        //qWarning(fn.toLatin1().constData());
+                        productInsert.bindValue(fn, product_item.title[key]);
+                    }
+                    foreach(QString key, product_item.content.keys())
+                    {
+                        QString fn = ":" + key;
+                        fn = fn.replace("`", "");
+                        productInsert.bindValue(fn, product_item.content[key]);
+                    }
+                    foreach(QString key, product_item.anons.keys())
+                    {
+                        QString fn = ":" + key;
+                        fn = fn.replace("`", "");
+                        productInsert.bindValue(fn, product_item.anons[key]);
+                    }
+                    foreach(QString key, product_item.description.keys())
+                    {
+                        QString fn = ":" + key;
+                        fn = fn.replace("`", "");
+                        productInsert.bindValue(fn, product_item.description[key]);
+                    }
+                    foreach(QString key, product_item.location.keys())
+                    {
+                        QString fn = ":" + key;
+                        fn = fn.replace("`", "");
+                        productInsert.bindValue(fn, product_item.location[key]);
+                    }
+                    productInsert.bindValue(":article_value", product_item.article);
+                    productInsert.bindValue(":category_id_value", product_item.category_id);
+                    productInsert.bindValue(":price_value", product_item.price);
+                    productInsert.bindValue(":end_time_value", product_item.end_time);
+                    productInsert.bindValue(":slug_value", product_item.slug);
+                    productInsert.bindValue(":ident_name_value", product_item.ident_name);
+                    if(!productInsert.exec())
+                    {
+                        QSqlQuery logInsert(database);
+                        logInsert.prepare("INSERT INTO service_logs (code,message,link,create_dt) VALUES(:code_value,:message_value,:link_value,:create_dt_value);");
+                        logInsert.bindValue(":code_value", 10);
+                        logInsert.bindValue(":message_value", productInsert.lastError().text());
+                        logInsert.bindValue(":link_value", product_item.ident_name);
+                        logInsert.bindValue(":create_dt_value", QDateTime::currentDateTime().toTime_t());
+                        logInsert.exec();
+                        emit parserEnd(p, "ProductParser");
+                    }
+                    else
+                    {
+                        //qWarning(getLastExecutedQuery(productInsert).toLatin1().constData());
+                        product_item.id = productInsert.lastInsertId().toInt();
+                        QDir().mkpath(settings->AbsUploadPath + "/products/" + QString::number(product_item.id) + "/main");
+                        QDir().mkpath(settings->AbsUploadPath + "/products/" + QString::number(product_item.id) + "/additional");
+                        QFile folder_id(settings->AbsUploadPath + "/products/" + QString::number(product_item.id));
+                        QFile::Permissions permissions = folder_id.permissions();
+                        permissions.setFlag(QFile::ExeOwner);
+                        permissions.setFlag(QFile::ReadOwner);
+                        permissions.setFlag(QFile::WriteOwner);
+                        permissions.setFlag(QFile::ExeUser);
+                        permissions.setFlag(QFile::ReadUser);
+                        permissions.setFlag(QFile::WriteUser);
+                        permissions.setFlag(QFile::ExeGroup);
+                        permissions.setFlag(QFile::ReadGroup);
+                        permissions.setFlag(QFile::WriteGroup);
+                        permissions.setFlag(QFile::ExeOther);
+                        permissions.setFlag(QFile::ReadOther);
+                        permissions.setFlag(QFile::WriteOther);
+                        //qWarning("Parser ProductParser productCreate314!!!");
+                        folder_id.setPermissions(permissions);
+                        QFile folder_main(settings->AbsUploadPath + "/products/" + QString::number(product_item.id) + "/main");
+                        folder_main.setPermissions(permissions);
+                        QFile folder_additional(settings->AbsUploadPath + "/products/" + QString::number(product_item.id) + "/additional");
+                        folder_additional.setPermissions(permissions);
+                        //qWarning("Parser ProductParser productCreate320!!!");
+                        uploadPhoto();
+                    }
+                }
             }
-            foreach(QString key, product_item.content.keys())
-            {
-                QString fn = ":" + key;
-                fn = fn.replace("`", "");
-                productInsert.bindValue(fn, product_item.content[key]);
+            else {
+                QSqlQuery logInsert(database);
+                logInsert.prepare("INSERT INTO service_logs (code,message,link,create_dt) VALUES(:code_value,:message_value,:link_value,:create_dt_value);");
+                logInsert.bindValue(":code_value", 11);
+                logInsert.bindValue(":message_value", "End date of auction not correct!");
+                logInsert.bindValue(":link_value", product_item.ident_name);
+                logInsert.bindValue(":create_dt_value", QDateTime::currentDateTime().toTime_t());
+                logInsert.exec();
+                emit parserEnd(p, "ProductParser");
             }
-            foreach(QString key, product_item.anons.keys())
-            {
-                QString fn = ":" + key;
-                fn = fn.replace("`", "");
-                productInsert.bindValue(fn, product_item.anons[key]);
-            }
-            foreach(QString key, product_item.description.keys())
-            {
-                QString fn = ":" + key;
-                fn = fn.replace("`", "");
-                productInsert.bindValue(fn, product_item.description[key]);
-            }
-            foreach(QString key, product_item.location.keys())
-            {
-                QString fn = ":" + key;
-                fn = fn.replace("`", "");
-                productInsert.bindValue(fn, product_item.location[key]);
-            }
-            productInsert.bindValue(":article_value", product_item.article);
-            productInsert.bindValue(":category_id_value", product_item.category_id);
-            productInsert.bindValue(":price_value", product_item.price);
-            productInsert.bindValue(":end_time_value", product_item.end_time);
-            productInsert.bindValue(":slug_value", product_item.slug);
-            productInsert.bindValue(":ident_name_value", product_item.ident_name);
-            productInsert.exec();
-            //qWarning(getLastExecutedQuery(productInsert).toLatin1().constData());
-            product_item.id = productInsert.lastInsertId().toInt();
-            QDir().mkpath(settings->AbsUploadPath + "/products/" + QString::number(product_item.id) + "/main");
-            QDir().mkpath(settings->AbsUploadPath + "/products/" + QString::number(product_item.id) + "/additional");
-            QFile folder_id(settings->AbsUploadPath + "/products/" + QString::number(product_item.id));
-            QFile::Permissions permissions = folder_id.permissions();
-            permissions.setFlag(QFile::ExeOwner);
-            permissions.setFlag(QFile::ReadOwner);
-            permissions.setFlag(QFile::WriteOwner);
-            permissions.setFlag(QFile::ExeUser);
-            permissions.setFlag(QFile::ReadUser);
-            permissions.setFlag(QFile::WriteUser);
-            permissions.setFlag(QFile::ExeGroup);
-            permissions.setFlag(QFile::ReadGroup);
-            permissions.setFlag(QFile::WriteGroup);
-            permissions.setFlag(QFile::ExeOther);
-            permissions.setFlag(QFile::ReadOther);
-            permissions.setFlag(QFile::WriteOther);
-            //qWarning("Parser ProductParser productCreate314!!!");
-            folder_id.setPermissions(permissions);
-            QFile folder_main(settings->AbsUploadPath + "/products/" + QString::number(product_item.id) + "/main");
-            folder_main.setPermissions(permissions);
-            QFile folder_additional(settings->AbsUploadPath + "/products/" + QString::number(product_item.id) + "/additional");
-            folder_additional.setPermissions(permissions);
-            //qWarning("Parser ProductParser productCreate320!!!");
-            uploadPhoto();
         }
     }
     else
     {
+        QJsonDocument doc = QJsonDocument::fromJson(product.toString().toUtf8());
+        QJsonObject jObject = doc.object();
+        QVariantMap product_map = jObject.toVariantMap();
+        QSqlQuery logInsert(database);
+        logInsert.prepare("INSERT INTO service_logs (code,message,link,create_dt) VALUES(:code_value,:message_value,:link_value,:create_dt_value);");
+        logInsert.bindValue(":code_value", translateMap["code"].toInt());
+        logInsert.bindValue(":message_value", translateMap["message"].toString());
+        logInsert.bindValue(":link_value", product_map["ident_name"].toString());
+        logInsert.bindValue(":create_dt_value", QDateTime::currentDateTime().toTime_t());
+        logInsert.exec();
         emit parserEnd(p, "ProductParser");
-        qWarning(translateMap["code"].toString().toLatin1().constData());
     }
 }
 
