@@ -137,6 +137,10 @@ void ProductParser::parse()
                             emit parserEnd(p, "ProductParser");
                         }
                     }
+                    else
+                    {
+                        emit parserEnd(p, "ProductParser");
+                    }
                 }
                 else {
                     QSqlQuery logInsert(database);
@@ -469,6 +473,10 @@ void ProductParser::productCreate(QString reply)
                         //qWarning("Parser ProductParser productCreate320!!!");
                         uploadPhoto();
                     }
+                }
+                else
+                {
+                    emit parserEnd(p, "ProductParser");
                 }
             }
             else {
