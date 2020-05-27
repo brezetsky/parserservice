@@ -182,6 +182,7 @@ void ProductParser::translate()
         postData.addQueryItem("text", product_map["location"].toString());
         postData.addQueryItem("format", "html");
         postData.addQueryItem("lang", abrv);
+        qWarning(postData.toString(QUrl::FullyEncoded).toUtf8());
         //qWarning("Parser ProductParser translate144!!!");
         QNetworkRequest request(url);
         request.setHeader(QNetworkRequest::ContentTypeHeader,

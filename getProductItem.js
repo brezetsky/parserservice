@@ -73,7 +73,7 @@ qt.jQuery(qt.photo_selector).each(function() {
         qt.src = qt.jQuery(this).attr("src");
     }
     var phost = location.protocol+'//'+location.hostname;
-    if(qt.src.indexOf(location.hostname) == -1 && (typeof qt.srcSet === typeof undefined || qt.srcSet === false)) {
+    if(qt.src.indexOf("http") == -1 && qt.src.indexOf(location.hostname) == -1 && (typeof qt.srcSet === typeof undefined || qt.srcSet === false)) {
         qt.src = phost + qt.src;
     }
     if(qt.src.indexOf("http") == -1)
