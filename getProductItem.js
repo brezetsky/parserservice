@@ -24,10 +24,16 @@ qt.product_item = {
     status: "{status}",
 };
 
+qt.fixedEncodeURIComponent = function(str){
+    return encodeURIComponent(str).replace(/[!'()*]/g, function(c) {
+      return '%' + c.charCodeAt(0).toString(16);
+    });
+}
+
 qt.product_item.article = qt.jQuery(qt.article_selector).text();
-qt.product_item.title = qt.jQuery(qt.title_selector).text().replace(qt.product_item.article, "");
-qt.product_item.description = qt.jQuery(qt.description_selector).html();
-qt.product_item.location = qt.jQuery(qt.location_selector).text();
+qt.product_item.title = qt.fixedEncodeURIComponent(qt.jQuery(qt.title_selector).text().replace(qt.product_item.article, ""));
+qt.product_item.description = qt.fixedEncodeURIComponent(qt.jQuery(qt.description_selector).html());
+qt.product_item.location = qt.fixedEncodeURIComponent(qt.jQuery(qt.location_selector).text());
 qt.product_item.end_time = qt.jQuery(qt.end_time_selector).text().replace(" at", "");
 qt.product_item.end_time = qt.product_item.end_time.replace("Jan", "01");
 qt.product_item.end_time = qt.product_item.end_time.replace("JAN", "01");
@@ -104,7 +110,7 @@ qt.printPrice = function() {
 
     //console.log(qt.logistic_price);
     qt.product_item.price = eval(qt.price_formula);
-    qt.product_item.price = Math.ceil((qt.product_item.price)*100)/100;
+    qt.product_item.price = Math.ceil((qt.product_item.price));
     //console.log(qt.product_item.price);
 }
 

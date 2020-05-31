@@ -182,7 +182,7 @@ void ProductParser::translate()
         postData.addQueryItem("text", product_map["location"].toString());
         postData.addQueryItem("format", "html");
         postData.addQueryItem("lang", abrv);
-        qWarning(postData.toString(QUrl::FullyEncoded).toUtf8());
+        //qWarning(postData.toString(QUrl::FullyEncoded).toUtf8());
         //qWarning("Parser ProductParser translate144!!!");
         QNetworkRequest request(url);
         request.setHeader(QNetworkRequest::ContentTypeHeader,
@@ -191,7 +191,7 @@ void ProductParser::translate()
         pt = new QWebEnginePage();
         QWebEngineHttpRequest r(url, QWebEngineHttpRequest::Post);
         r.setHeader(QByteArray("Content-Type"), QByteArray("application/x-www-form-urlencoded"));
-        r.setPostData(postData.toString(QUrl::FullyEncoded).toUtf8());
+        r.setPostData(postData.toString().toUtf8());
 #if defined(QUSEPROXY)
         QNetworkProxy proxy;
         proxy.setType(QNetworkProxy::HttpProxy);
