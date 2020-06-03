@@ -289,7 +289,15 @@ void ProductParser::productCreate(QString reply)
                 utc_value = 1;
                 end_time = end_time.remove(" EET");
             }
+            if(row->date_format == "d MM h:mm yyyy")
+            {
+                end_time = end_time + " " + QDateTime::currentDateTime().toString("yyyy");
+            }
             if(row->date_format == "d MM hh:mm yyyy")
+            {
+                end_time = end_time + " " + QDateTime::currentDateTime().toString("yyyy");
+            }
+            if(row->date_format == "dd MM hh:mm yyyy")
             {
                 end_time = end_time + " " + QDateTime::currentDateTime().toString("yyyy");
             }
@@ -297,7 +305,17 @@ void ProductParser::productCreate(QString reply)
             {
                 end_time = end_time + QDateTime::currentDateTime().toString("yyyy");
             }
+            if(row->date_format == "d MM h:mm")
+            {
+                row->date_format = row->date_format + " yyyy";
+                end_time = end_time + " " + QDateTime::currentDateTime().toString("yyyy");
+            }
             if(row->date_format == "d MM hh:mm")
+            {
+                row->date_format = row->date_format + " yyyy";
+                end_time = end_time + " " + QDateTime::currentDateTime().toString("yyyy");
+            }
+            if(row->date_format == "dd MM hh:mm")
             {
                 row->date_format = row->date_format + " yyyy";
                 end_time = end_time + " " + QDateTime::currentDateTime().toString("yyyy");
