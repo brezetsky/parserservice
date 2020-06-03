@@ -32,7 +32,7 @@ qt.fixedEncodeURIComponent = function(str){
 
 qt.product_item.article = qt.jQuery(qt.article_selector).text();
 qt.product_item.title = qt.fixedEncodeURIComponent(qt.jQuery(qt.title_selector).text().replace(qt.product_item.article, ""));
-qt.product_item.description = qt.fixedEncodeURIComponent(qt.jQuery(qt.description_selector).html());
+qt.product_item.description = qt.fixedEncodeURIComponent(qt.jQuery(qt.description_selector).html().replace(qt.product_item.article, ""));
 qt.product_item.location = qt.fixedEncodeURIComponent(qt.jQuery(qt.location_selector).text());
 qt.product_item.end_time = qt.jQuery(qt.end_time_selector).text().replace(" at", "");
 qt.product_item.end_time = qt.jQuery(qt.end_time_selector).text().replace(" kl.", "");
