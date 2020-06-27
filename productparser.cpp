@@ -238,6 +238,7 @@ void ProductParser::getTranslate()
 
 void ProductParser::productCreate(QString reply)
 {
+    pt->deleteLater();
     //qWarning("Parser ProductParser productCreate181!!!");
     //qWarning(reply.toUtf8());
     //qWarning("Parser ProductParser productCreate183!!!");

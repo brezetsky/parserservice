@@ -101,6 +101,19 @@ qt.jQuery(qt.photo_selector).each(function() {
     {
         qt.src = "http:" + qt.src;
     }
+    if(phost == "https://www.bukowskis.com")
+    {
+        qt.src = qt.src.replace("bukobject", "fullsize");
+    }
+    if(phost == "https://sikoauktioner.se")
+    {
+        qt.src = qt.src.replace("/siko-im\d+/gi", "siko-immax");
+    }
+    if(phost == "https://auctionet.com")
+    {
+        qt.src = qt.src.replace("thumbs", "uploads");
+        qt.src = qt.src.replace("medium_", "");
+    }
 
     qt.product_item.photos[qt.photoNum] = qt.src;
     qt.photoNum++;
@@ -125,7 +138,7 @@ qt.printPrice = function() {
 
     //console.log(qt.logistic_price);
     qt.product_item.price = eval(qt.price_formula);
-    qt.product_item.price = Math.ceil((qt.product_item.price));
+    qt.product_item.price = Math.ceil((qt.product_item.price) / 5) * 5;
     //console.log(qt.product_item.price);
 }
 
