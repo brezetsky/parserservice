@@ -7,10 +7,10 @@ ParserMain::ParserMain(ParserSettings *s, QObject *parent) : QObject(parent)
     QDateTime bdt = QDateTime::fromString(date, "dd.MM.yyyy HH:mm:ss");
     settings = s;
     sitedb = QSqlDatabase::addDatabase("QMYSQL", "pmdb");
-    sitedb.setHostName("localhost");
-    sitedb.setDatabaseName("admin_foundbyshusha");
-    sitedb.setUserName("shushaaa");
-    sitedb.setPassword("gyRz307hghfgrwWwr");
+    sitedb.setHostName(s->DBHostName);
+    sitedb.setDatabaseName(s->DBName);
+    sitedb.setUserName(s->DBUserName);
+    sitedb.setPassword(s->DBUserPassword);
     qint64 fromMaybeLastStartTime = (cdt.toTime_t() - bdt.toTime_t()) % settings->ParseInterval;
     qint64 firstTimer = settings->ParseInterval - fromMaybeLastStartTime;
     parseTimer = new QTimer(this);
@@ -176,7 +176,7 @@ void ParserMain::manage_parsers(WebPage *wp, QString sender_name)
                     qint64 totalTime = QDateTime::currentDateTime().toTime_t() - startTime;
                     fprintf(stderr, "Total running time: %s seconds!", QString::number(totalTime).toLatin1().constData());
                     QSqlQuery query(sitedb);
-                    query.prepare("UPDATE product_parsers SET date_last_parse = :last_parse;");
+                    query.prepare("UPDATE product_parsers SET date_last_parse = :last_parse WHERE enabled=1;");
                     query.bindValue(":last_parse", QDateTime::currentDateTime().toTime_t());
                     query.exec();
                     QSqlQuery querySettings(sitedb);
@@ -274,7 +274,7 @@ void ParserMain::loadDbData()
     {
         //start parsing
         QSqlQuery getParserQuery(sitedb);
-        getParserQuery.prepare("SELECT * FROM product_parsers "
+        getParserQuery.prepare("SELECT * FROM product_parsers WHERE enabled=1 "
                       "LIMIT :offset, :limit");
         getParserQuery.bindValue(":offset", parserOffset);
         getParserQuery.bindValue(":limit", settings->MaxThreadsCount);

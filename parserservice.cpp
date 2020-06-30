@@ -23,10 +23,10 @@ void ParserService::start()
     settings.endGroup();
     settings.endGroup();
     parserdb = QSqlDatabase::addDatabase("QMYSQL", "psdb");
-    parserdb.setHostName("localhost");
-    parserdb.setDatabaseName("admin_foundbyshusha");
-    parserdb.setUserName("shushaaa");
-    parserdb.setPassword("gyRz307hghfgrwWwr");
+    parserdb.setHostName(DBHostName);
+    parserdb.setDatabaseName(DBName);
+    parserdb.setUserName(DBUserName);
+    parserdb.setPassword(DBUserPassword);
     bool ok = parserdb.open();
     if(!ok)
     {

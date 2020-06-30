@@ -5,6 +5,7 @@ ProductParser::ProductParser(ParserRow *r, WebPage *wp, QSqlDatabase& db,  Parse
 {
     p = wp;
     row = r;
+    product_item.ident_name = p->url().toString();
     settings = s;
     database = db;
     QSqlQuery getLanguagesQuery(database);
@@ -57,7 +58,7 @@ void ProductParser::parse()
            //get the jsonObject
             QJsonObject jObject = doc.object();
             QVariantMap product_map = jObject.toVariantMap();
-            QString ident_name = product_map["ident_name"].toString();
+            QString ident_name = product_item.ident_name;
             QSqlQuery productCheck(database);
             productCheck.prepare("SELECT id FROM products WHERE ident_name = :in;");
             productCheck.bindValue(":in", ident_name);
@@ -538,7 +539,7 @@ void ProductParser::productCreate(QString reply)
         logInsert.prepare("INSERT INTO service_logs (code,message,link,create_dt) VALUES(:code_value,:message_value,:link_value,:create_dt_value);");
         logInsert.bindValue(":code_value", translateMap["code"].toInt());
         logInsert.bindValue(":message_value", translateMap["message"].toString());
-        logInsert.bindValue(":link_value", product_map["ident_name"].toString());
+        logInsert.bindValue(":link_value", product_item.ident_name);
         logInsert.bindValue(":create_dt_value", QDateTime::currentDateTime().toTime_t());
         logInsert.exec();
         emit parserEnd(p, "ProductParser");
