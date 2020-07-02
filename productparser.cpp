@@ -79,19 +79,19 @@ void ProductParser::parse()
                     utc_value = 1;
                     end_time = end_time.remove("EET");
                 }
-                if(row->date_format == "d MM h:mm yyyy")
+                if(row->date_format == "d MM h:mm yyyy" || row->date_format == "d-MM-h:mm-yyyy")
                 {
                     end_time = end_time + " " + QDateTime::currentDateTime().toString("yyyy");
                 }
-                if(row->date_format == "d MM hh:mm yyyy")
+                if(row->date_format == "d MM hh:mm yyyy" || row->date_format == "d-MM-hh:mm-yyyy")
                 {
                     end_time = end_time + " " + QDateTime::currentDateTime().toString("yyyy");
                 }
-                if(row->date_format == "dd MM hh:mm yyyy")
+                if(row->date_format == "dd MM hh:mm yyyy" || row->date_format == "dd-MM-hh:mm-yyyy")
                 {
                     end_time = end_time + " " + QDateTime::currentDateTime().toString("yyyy");
                 }
-                if(row->date_format == "MM d h:mm AP yyyy")
+                if(row->date_format == "MM d h:mm AP yyyy" || row->date_format == "MM-d-h:mm-AP-yyyy")
                 {
                     end_time = end_time + QDateTime::currentDateTime().toString("yyyy");
                 }
@@ -291,19 +291,19 @@ void ProductParser::productCreate(QString reply)
                 utc_value = 1;
                 end_time = end_time.remove(" EET");
             }
-            if(row->date_format == "d MM h:mm yyyy")
+            if(row->date_format == "d MM h:mm yyyy" || row->date_format == "d-MM-h:mm-yyyy")
             {
                 end_time = end_time + " " + QDateTime::currentDateTime().toString("yyyy");
             }
-            if(row->date_format == "d MM hh:mm yyyy")
+            if(row->date_format == "d MM hh:mm yyyy" || row->date_format == "d-MM-hh:mm-yyyy")
             {
                 end_time = end_time + " " + QDateTime::currentDateTime().toString("yyyy");
             }
-            if(row->date_format == "dd MM hh:mm yyyy")
+            if(row->date_format == "dd MM hh:mm yyyy" || row->date_format == "dd-MM-hh:mm-yyyy")
             {
                 end_time = end_time + " " + QDateTime::currentDateTime().toString("yyyy");
             }
-            if(row->date_format == "MM d h:mm AP yyyy")
+            if(row->date_format == "MM d h:mm AP yyyy" || row->date_format == "MM-d-h:mm-AP-yyyy")
             {
                 end_time = end_time + QDateTime::currentDateTime().toString("yyyy");
             }
