@@ -41,13 +41,15 @@ void ParserMain::load()
     //qWarning("Parser Start!!!");
     startTime = QDateTime::currentDateTime().toTime_t();
     QSqlQuery query(sitedb);
-    query.exec("SELECT parse_interval, abs_upload_path, max_threads_count, yandex_translate_key FROM site_settings");
+    query.exec("SELECT parse_interval, abs_upload_path, max_threads_count, yandex_translate_key, service_translator_key, service_translator_type FROM site_settings");
     //qWarning("Load Parser settings!");
     while (query.next()) {
         settings->ParseInterval = query.value(0).toInt();
         settings->AbsUploadPath = query.value(1).toString();
         settings->MaxThreadsCount = query.value(2).toInt();
         settings->YandexTranslateKey = query.value(3).toString();
+        settings->ServiceTranslatorKey = query.value(4).toString();
+        settings->ServiceTranslatorType = query.value(5).toInt();
     }
     //qWarning("Parser settings loaded!!!");
     //query.~QSqlQuery();
@@ -128,13 +130,15 @@ void ParserMain::manage_parsers(WebPage *wp, QString sender_name)
         qint64 totalTime = QDateTime::currentDateTime().toTime_t() - startTime;
         fprintf(stderr, "Total running time: %s seconds!", QString::number(totalTime).toLatin1().constData());
         QSqlQuery querySettings(sitedb);
-        querySettings.exec("SELECT parse_interval, abs_upload_path, max_threads_count, yandex_translate_key FROM site_settings");
+        querySettings.exec("SELECT parse_interval, abs_upload_path, max_threads_count, yandex_translate_key, service_translator_key, service_translator_type FROM site_settings");
         //qWarning("Load Parser settings!");
         while (querySettings.next()) {
             settings->ParseInterval = querySettings.value(0).toInt();
             settings->AbsUploadPath = querySettings.value(1).toString();
             settings->MaxThreadsCount = querySettings.value(2).toInt();
             settings->YandexTranslateKey = querySettings.value(3).toString();
+            settings->ServiceTranslatorKey = querySettings.value(4).toString();
+            settings->ServiceTranslatorType = querySettings.value(5).toInt();
         }
         sitedb.close();
         QDateTime cdt = QDateTime::currentDateTime();
@@ -180,13 +184,15 @@ void ParserMain::manage_parsers(WebPage *wp, QString sender_name)
                     query.bindValue(":last_parse", QDateTime::currentDateTime().toTime_t());
                     query.exec();
                     QSqlQuery querySettings(sitedb);
-                    querySettings.exec("SELECT parse_interval, abs_upload_path, max_threads_count, yandex_translate_key FROM site_settings");
+                    querySettings.exec("SELECT parse_interval, abs_upload_path, max_threads_count, yandex_translate_key, service_translator_key, service_translator_type FROM site_settings");
                     //qWarning("Load Parser settings!");
                     while (querySettings.next()) {
                         settings->ParseInterval = querySettings.value(0).toInt();
                         settings->AbsUploadPath = querySettings.value(1).toString();
                         settings->MaxThreadsCount = querySettings.value(2).toInt();
                         settings->YandexTranslateKey = querySettings.value(3).toString();
+                        settings->ServiceTranslatorKey = querySettings.value(4).toString();
+                        settings->ServiceTranslatorType = querySettings.value(5).toInt();
                     }
                     sitedb.close();
                     QDateTime cdt = QDateTime::currentDateTime();

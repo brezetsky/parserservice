@@ -192,17 +192,29 @@ void ProductParser::translate()
     //qWarning("Parser ProductParser translate132!!!");
     foreach (QString abrv, languages) {
         //qWarning("Parser ProductParser translate134!!!");
-        QUrl url = QUrl("https://translate.yandex.net/api/v1.5/tr.json/translate");
+        QUrl url;
         QUrlQuery postData;
-        postData.addQueryItem("key", settings->YandexTranslateKey);
-        //qWarning("Parser ProductParser translate138!!!");
-        postData.addQueryItem("text", product_map["title"].toString());
-        postData.addQueryItem("text", product_map["description"].toString());
-        postData.addQueryItem("text", product_map["location"].toString());
-        postData.addQueryItem("format", "html");
-        postData.addQueryItem("lang", abrv);
-        //qWarning(postData.toString(QUrl::FullyEncoded).toUtf8());
-        //qWarning("Parser ProductParser translate144!!!");
+        if(settings->ServiceTranslatorType == 1)
+        {
+            url = QUrl("https://translate.yandex.net/api/v1.5/tr.json/translate");
+            postData.addQueryItem("key", settings->YandexTranslateKey);
+            //qWarning("Parser ProductParser translate138!!!");
+            postData.addQueryItem("text", product_map["title"].toString());
+            postData.addQueryItem("text", product_map["description"].toString());
+            postData.addQueryItem("text", product_map["location"].toString());
+            postData.addQueryItem("format", "html");
+            postData.addQueryItem("lang", abrv);
+            //qWarning(postData.toString(QUrl::FullyEncoded).toUtf8());
+            //qWarning("Parser ProductParser translate144!!!");
+        }
+        else
+        {
+            url = QUrl("https://foundbyshusha.com/service_translate_google/" + settings->ServiceTranslatorKey);
+            postData.addQueryItem("title", product_map["title"].toString());
+            postData.addQueryItem("description", product_map["description"].toString());
+            postData.addQueryItem("location", product_map["location"].toString());
+            postData.addQueryItem("lang", abrv);
+        }
         QNetworkRequest request(url);
         request.setHeader(QNetworkRequest::ContentTypeHeader,
             "application/x-www-form-urlencoded");
@@ -252,7 +264,15 @@ void ProductParser::productCreate(QString reply)
     if(translateMap["code"].toInt() == 200)
     {
         //qWarning("Parser ProductParser productCreate190!!!");
-        QString lang = translateMap["lang"].toString().right(translateMap["lang"].toString().indexOf('-'));
+        QString lang;
+        if(settings->ServiceTranslatorType == 1)
+        {
+            lang = translateMap["lang"].toString().right(translateMap["lang"].toString().indexOf('-'));
+        }
+        else
+        {
+            lang = translateMap["lang"].toString();
+        }
         //qWarning("Parser ProductParser productCreate192!!!");
         QVariantList text = translateMap["text"].toList();
         //qWarning("Parser ProductParser productCreate194!!!");
