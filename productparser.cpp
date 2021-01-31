@@ -135,10 +135,12 @@ void ProductParser::parse()
                         end_time = QString::number(end_timedt);
                         //qWarning(end_time.toLatin1().constData());
                         QString price = product_map["price"].toString();
+                        QString price_source = product_map["price_source"].toString();
                         QSqlQuery productUpdate(database);
-                        productUpdate.prepare("UPDATE products SET end_time = :et, price = :pv WHERE id = :id;");
+                        productUpdate.prepare("UPDATE products SET end_time = :et, price = :pv, price_source = :pv_source WHERE id = :id;");
                         productUpdate.bindValue(":et", end_time);
                         productUpdate.bindValue(":pv", price);
+                        productUpdate.bindValue(":pv_source", price_source);
                         productUpdate.bindValue(":id", id);
                         if(!productUpdate.exec())
                         {
@@ -297,6 +299,19 @@ void ProductParser::productCreate(QString reply)
             product_item.ident_name = product_map["ident_name"].toString();
             product_item.slug = product_map["ident_name"].toString().section('/', -1);
             product_item.status = product_map["status"].toString();
+
+            // product source informaion
+            product_item.title_source = product_map["title"].toString();
+            product_item.content_source = product_map["description"].toString();
+            product_item.anons_source = product_map["description"].toString().remove(QRegExp("<[^>]*>")).left(254);
+            product_item.description_source = product_map["description"].toString().remove(QRegExp("<[^>]*>")).left(254);
+            product_item.location_source = product_map["location"].toString();
+            product_item.price_source = product_map["price_source"].toString();
+
+            // postData.addQueryItem("text", product_map["title"].toString());
+            // postData.addQueryItem("text", product_map["description"].toString());
+            // postData.addQueryItem("text", product_map["location"].toString());
+
             QJsonObject jPhotos = product_map["photos"].toJsonObject();
             product_item.photos = jPhotos.toVariantMap();
             QString end_time = product_map["end_time"].toString();
@@ -451,8 +466,8 @@ void ProductParser::productCreate(QString reply)
                     location_values.replace("`", "");
                     //qWarning(title_values.toLatin1().constData());
 
-                    productInsert.prepare("INSERT INTO products ("+ title_keys + ", " + anons_keys + ", " + content_keys + ", " + description_keys + ", " + location_keys + ", `article`, `category_id`, `price`, `end_time`, `slug`, `ident_name`) "
-                                          "VALUES(" + title_values + ", " + anons_values + ", " + content_values + ", " + description_values + ", " + location_values + ", :article_value, :category_id_value, :price_value, :end_time_value, :slug_value, :ident_name_value);");
+                    productInsert.prepare("INSERT INTO products ("+ title_keys + ", " + anons_keys + ", " + content_keys + ", " + description_keys + ", " + location_keys + ", `article`, `category_id`, `price`, `end_time`, `slug`, `ident_name`, `title_source`, `content_source`, `anons_source`, `description_source`, `location_source`, `price_source`) "
+                                          "VALUES(" + title_values + ", " + anons_values + ", " + content_values + ", " + description_values + ", " + location_values + ", :article_value, :category_id_value, :price_value, :end_time_value, :slug_value, :ident_name_value, :title_source, :content_source, :anons_source, :description_source, :location_source, :price_source);");
                     foreach(QString key, product_item.title.keys())
                     {
                         //qWarning(key.toLatin1().constData());
@@ -492,6 +507,12 @@ void ProductParser::productCreate(QString reply)
                     productInsert.bindValue(":end_time_value", product_item.end_time);
                     productInsert.bindValue(":slug_value", product_item.slug);
                     productInsert.bindValue(":ident_name_value", product_item.ident_name);
+                    productInsert.bindValue(":title_source", product_item.title_source);
+                    productInsert.bindValue(":content_source", product_item.content_source);
+                    productInsert.bindValue(":anons_source", product_item.anons_source);
+                    productInsert.bindValue(":description_source", product_item.description_source);
+                    productInsert.bindValue(":location_source", product_item.location_source);
+                    productInsert.bindValue(":price_source", product_item.price_source);
                     if(!productInsert.exec())
                     {
                         QSqlQuery logInsert(database);

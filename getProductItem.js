@@ -139,6 +139,8 @@ qt.printPrice = function() {
     //console.log(qt.logistic_price);
     qt.product_item.price = eval(qt.price_formula);
     qt.product_item.price = Math.ceil((qt.product_item.price) / 5) * 5;
+
+    qt.product_item.price_source = qt.orig_price;
     //console.log(qt.product_item.price);
 }
 
